@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  HEAD
+  STAFF
+  VIEWER
+}
+
+enum AgendaStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Office {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  users     User[]
+  agendas   Agenda[]
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id       String  @id @default(uuid())
+  name     String
+  email    String  @unique
+  password String
+  role     Role    @default(STAFF)
+  active   Boolean @default(true)
+
+  officeId String?
+  office   Office? @relation(fields: [officeId], references: [id])
+
+  agendas         Agenda[] @relation("CreatedAgendas")
+  approvedAgendas Agenda[] @relation("ApprovedAgendas")
+
+  createdAt DateTime @default(now())
+}
+
+model Agenda {
+  id String @id @default(cuid())
+
+  title       String
+  description String?
+  status      AgendaStatus @default(PENDING)
+
+  createdById String
+  createdBy   User   @relation("CreatedAgendas", fields: [createdById], references: [id])
+
+  officeId String?
+  office   Office? @relation(fields: [officeId], references: [id])
+
+  approvedById String?
+  approvedBy   User?   @relation("ApprovedAgendas", fields: [approvedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

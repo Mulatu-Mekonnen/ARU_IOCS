@@ -1,65 +1,166 @@
-import Image from "next/image";
+import { getSessionUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
-export default function Home() {
+export default async function Home() {
+  const user = await getSessionUser();
+
+  if (user) {
+    if (user.role === 'ADMIN') {
+      redirect('/dashboard/admin');
+    } else {
+      redirect('/dashboard/staff');
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
+      <div style={{ maxWidth: '1200px', width: '100%', margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <div style={{
+            display: 'inline-block',
+            background: 'rgba(255,255,255,0.2)',
+            padding: '12px 24px',
+            borderRadius: '50px',
+            color: 'white',
+            fontSize: '14px',
+            fontWeight: '600',
+            border: '1px solid rgba(255,255,255,0.3)'
+          }}>
+            🏢 INTER-OFFICE AGENDA SYSTEM
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Card */}
+        <div style={{
+          background: 'white',
+          borderRadius: '30px',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+          overflow: 'hidden',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr'
+        }}>
+
+          {/* Left */}
+          <div style={{
+            background: 'linear-gradient(145deg, #4834d4 0%, #686de0 100%)',
+            padding: '50px 40px',
+            color: 'white'
+          }}>
+            <h1 style={{
+              fontSize: '42px',
+              fontWeight: '800',
+              marginBottom: '20px',
+              lineHeight: '1.2'
+            }}>
+              Streamline Your<br />
+              <span style={{ color: '#ffd32a' }}>
+                Office Communications
+              </span>
+            </h1>
+
+            <p style={{
+              fontSize: '18px',
+              marginBottom: '30px',
+              lineHeight: '1.6'
+            }}>
+              The complete solution for managing inter-office agendas,
+              meetings, and department coordination.
+            </p>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '20px'
+            }}>
+              <div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold' }}>250+</div>
+                <div>Active Offices</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold' }}>10k+</div>
+                <div>Daily Users</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right */}
+          <div style={{ padding: '50px 40px' }}>
+            <h2 style={{
+              fontSize: '32px',
+              fontWeight: '800',
+              marginBottom: '15px'
+            }}>
+              Welcome Back 👋
+            </h2>
+
+            <p style={{
+              fontSize: '16px',
+              color: '#636e72',
+              marginBottom: '40px'
+            }}>
+              Secure agenda management for modern offices
+            </p>
+
+            {/* Button (Fixed — no event handlers) */}
+            <Link
+              href="/login"
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '18px',
+                background: 'linear-gradient(145deg, #4834d4, #686de0)',
+                color: 'white',
+                textAlign: 'center',
+                textDecoration: 'none',
+                borderRadius: '15px',
+                fontSize: '18px',
+                fontWeight: '600',
+                marginBottom: '20px',
+                transition: 'opacity 0.2s ease'
+              }}
+            >
+              Access Dashboard →
+            </Link>
+
+            <div style={{
+              background: '#f5f6fa',
+              borderRadius: '15px',
+              padding: '20px',
+              textAlign: 'center'
+            }}>
+              <p style={{ marginBottom: '10px', fontWeight: '500' }}>
+                Contact your administrator
+              </p>
+              <p style={{ fontSize: '14px', color: '#636e72' }}>
+                to set up your account credentials
+              </p>
+            </div>
+          </div>
+
         </div>
-      </main>
+
+        {/* Footer */}
+        <div style={{
+          textAlign: 'center',
+          marginTop: '30px',
+          color: 'white',
+          fontSize: '14px'
+        }}>
+          © 2026 IO Agenda System. All rights reserved.
+        </div>
+
+      </div>
     </div>
   );
 }

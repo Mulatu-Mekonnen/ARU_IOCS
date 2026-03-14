@@ -39,6 +39,9 @@ model Office {
   users     User[]
   sentAgendas     Agenda[] @relation("SentAgendas")
   receivedAgendas Agenda[] @relation("ReceivedAgendas")
+  currentAgendas  Agenda[] @relation("CurrentAgendas")
+  routesFrom     AgendaRoute[] @relation("FromOffice")
+  routesTo       AgendaRoute[] @relation("ToOffice")
   createdAt DateTime @default(now())
 }
 
@@ -56,6 +59,7 @@ model User {
   agendas         Agenda[] @relation("CreatedAgendas")
   approvedAgendas Agenda[] @relation("ApprovedAgendas")
   approvalActions ApprovalHistory[] @relation("UserActions")
+  routedAgendas   AgendaRoute[] @relation("UserRoutedAgendas")
 
   createdAt DateTime @default(now())
 }
@@ -65,7 +69,12 @@ model Agenda {
 
   title       String
   description String?
-  attachment  String?
+
+  // Attachment metadata
+  attachmentUrl  String?
+  attachmentName String?
+  attachmentSize Int?
+
   status      AgendaStatus @default(PENDING)
 
   createdById String
@@ -77,11 +86,32 @@ model Agenda {
   receiverOfficeId String?
   receiverOffice   Office? @relation("ReceivedAgendas", fields: [receiverOfficeId], references: [id])
 
+  currentOfficeId String?
+  currentOffice   Office? @relation("CurrentAgendas", fields: [currentOfficeId], references: [id])
+
   approvedById String?
   approvedBy   User?   @relation("ApprovedAgendas", fields: [approvedById], references: [id])
 
   approvalHistories ApprovalHistory[]
+  routes            AgendaRoute[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AgendaRoute {
+  id          String   @id @default(cuid())
+  agenda      Agenda   @relation(fields: [agendaId], references: [id])
+  agendaId    String
+
+  fromOffice  Office   @relation("FromOffice", fields: [fromOfficeId], references: [id])
+  fromOfficeId String
+
+  toOffice    Office   @relation("ToOffice", fields: [toOfficeId], references: [id])
+  toOfficeId   String
+
+  routedBy    User     @relation("UserRoutedAgendas", fields: [routedById], references: [id])
+  routedById  String
+
+  routedAt    DateTime @default(now())
 }

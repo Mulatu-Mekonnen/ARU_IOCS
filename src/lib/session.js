@@ -1,7 +1,7 @@
 // src/lib/session.js
 const { cookies } = require('next/headers');
 const { PrismaClient } = require('@prisma/client');
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('./auth');
 
 const prisma = new PrismaClient();
 
@@ -12,7 +12,9 @@ async function getSessionUser() {
   if (!token) return null;
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
+    if (!decoded) return null;
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: {

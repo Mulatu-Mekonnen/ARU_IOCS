@@ -41,7 +41,19 @@ export default function AdminLayout({ children }) {
         </nav>
 
         <div className="p-4 border-t text-sm text-gray-500">
-          Arsi University System
+          <button
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              window.location.href = "/";
+            }}
+            className="flex items-center gap-2 w-full text-left text-gray-700 hover:text-red-600 transition"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Logout
+          </button>
+          <div className="mt-2">Arsi University System</div>
         </div>
       </aside>
 

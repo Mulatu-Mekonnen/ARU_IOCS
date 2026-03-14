@@ -27,26 +27,32 @@ export async function GET() {
       _count: { status: true },
     });
 
-    const officeGroupsRaw = await prisma.agenda.groupBy({
-      by: ["senderOfficeId"],
-      _count: { id: true },
-    });
-    // fetch office names
-    const officeIds = officeGroupsRaw
-      .map((g) => g.senderOfficeId)
-      .filter((id) => id !== null);
-    const offices = await prisma.office.findMany({
-      where: { id: { in: officeIds } },
-      select: { id: true, name: true },
-    });
-    const officeMap = offices.reduce((acc, o) => {
-      acc[o.id] = o.name;
-      return acc;
-    }, {});
-    const officeGroups = officeGroupsRaw.map((g) => ({
-      ...g,
-      name: g.senderOfficeId ? officeMap[g.senderOfficeId] || "-" : "-",
-    }));
+    let officeGroups = [];
+    try {
+      const officeGroupsRaw = await prisma.agenda.groupBy({
+        by: ["senderOfficeId"],
+        _count: { id: true },
+      });
+      // fetch office names
+      const officeIds = officeGroupsRaw
+        .map((g) => g.senderOfficeId)
+        .filter((id) => id !== null);
+      const offices = await prisma.office.findMany({
+        where: { id: { in: officeIds } },
+        select: { id: true, name: true },
+      });
+      const officeMap = offices.reduce((acc, o) => {
+        acc[o.id] = o.name;
+        return acc;
+      }, {});
+      officeGroups = officeGroupsRaw.map((g) => ({
+        ...g,
+        name: g.senderOfficeId ? officeMap[g.senderOfficeId] || "-" : "-",
+      }));
+    } catch (err) {
+      console.error("Office groups error:", err);
+      // If column doesn't exist, leave officeGroups empty
+    }
 
     return NextResponse.json({
       totalUsers,
@@ -60,9 +66,8 @@ export async function GET() {
     });
   } catch (err) {
     console.error(err);
-    return NextResponse.json(
-      { message: "Forbidden" },
-      { status: 403 }
-    );
+    const status = err?.status || 500;
+    const message = err?.message || (status === 403 ? "Forbidden" : "Server error");
+    return NextResponse.json({ message }, { status });
   }
 }

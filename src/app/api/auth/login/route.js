@@ -8,7 +8,11 @@ const prisma = new PrismaClient();
 
 export async function POST(req) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, rememberMe } = await req.json();
+
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+    }
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -28,7 +32,7 @@ export async function POST(req) {
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: rememberMe ? "30d" : "1d" }
     );
 
     const response = NextResponse.json({
@@ -36,13 +40,14 @@ export async function POST(req) {
     });
 
     // ✅ SET COOKIE
-  response.cookies.set({
-  name: "token",
-  value: token,
-  httpOnly: true,
-  path: "/",
-  sameSite: "lax",
-});
+    response.cookies.set({
+      name: "token",
+      value: token,
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+      maxAge: rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24,
+    });
 
     return response;
 

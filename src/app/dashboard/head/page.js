@@ -7,5 +7,5 @@ export default async function Page() {
   if (!user || user.role !== 'HEAD') {
     redirect('/login');
   }
-  return <HeadDashboardClient />;
+  return <HeadDashboardClient user={user} />;
 }

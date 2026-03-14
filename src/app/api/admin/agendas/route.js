@@ -73,6 +73,7 @@ export async function GET(request) {
           createdBy: true,
           senderOffice: true,
           receiverOffice: true,
+          currentOffice: true,
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -84,7 +85,7 @@ export async function GET(request) {
     return NextResponse.json({ agendas, total, page, pageSize });
   } catch (error) {
     console.error("ADMIN AGENDA ERROR:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Server error" }, { status: 500 });
   }
 }
 
@@ -110,13 +111,38 @@ export async function POST(request) {
       data: {
         title: body.title,
         description: body.description,
-        attachment: body.attachment || null,
         senderOfficeId,
         receiverOfficeId: body.receiverOfficeId || null,
+        currentOfficeId: body.receiverOfficeId || senderOfficeId,
         createdById: auth.user.id,
         status: "PENDING",
+        // if client already uploaded file and passed metadata
+        attachmentUrl: body.attachmentUrl || null,
+        attachmentName: body.attachmentName || null,
+        attachmentSize: body.attachmentSize || null,
       },
     });
+
+    // record create + send actions
+    await prisma.approvalHistory.createMany({
+      data: [
+        {
+          agendaId: newAgenda.id,
+          action: "CREATE",
+          actionById: auth.user.id,
+          comment: "Agenda created",
+        },
+        {
+          agendaId: newAgenda.id,
+          action: "SEND",
+          actionById: auth.user.id,
+          comment: body.receiverOfficeId
+            ? `Sent to office ${body.receiverOfficeId}`
+            : "Sent",
+        },
+      ],
+    });
+
     return NextResponse.json(newAgenda);
   } catch (error) {
     console.error("CREATE AGENDA ERROR:", error);

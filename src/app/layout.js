@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
         <header className="bg-arsiBlue text-white">
           <div className="max-w-7xl mx-auto px-4 py-2 flex items-center">
             <img src="/logo.png" alt="Arsi University" className="h-8 w-auto mr-3" />
-            <span className="font-bold text-lg">Arsi University Communication System</span>
+            <span className="font-bold text-lg">Inter Office Communication System</span>
           </div>
         </header>
         {children}

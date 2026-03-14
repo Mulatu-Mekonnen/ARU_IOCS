@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AdminDashboardClient() {
+  const router = useRouter();
   const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch("/api/admin/dashboard")
+    fetch("/api/admin/dashboard", { credentials: "include" })
       .then(async (res) => {
         if (!res.ok) {
           const errText = await res.text();
@@ -17,14 +20,24 @@ export default function AdminDashboardClient() {
       .then(setData)
       .catch((err) => {
         console.error(err);
+        setError(err.message);
         setData({ statusGroups: [], officeGroups: [] });
+        if (err.message.includes("401") || err.message.includes("403")) {
+          router.push("/login");
+        }
       });
-  }, []);
+  }, [router]);
+
   if (!data) return <div>Loading...</div>;
 
   return (
     <>
       <h1 className="text-3xl font-bold mb-6 text-gray-800">System Overview</h1>
+      {error && (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 p-4 text-red-700">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard title="Total Users" value={data.totalUsers || 0} />

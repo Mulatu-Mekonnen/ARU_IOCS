@@ -8,14 +8,14 @@ export async function roleGuard(requiredRole) {
 
   if (!token) {
     const error = new Error("Unauthorized");
-    error.status = 403;
+    error.status = 401;
     throw error;
   }
 
   const payload = verifyToken(token);
   if (!payload) {
     const error = new Error("Invalid token");
-    error.status = 403;
+    error.status = 401;
     throw error;
   }
 

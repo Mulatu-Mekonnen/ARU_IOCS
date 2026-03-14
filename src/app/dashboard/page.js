@@ -1,17 +1,22 @@
-"use client";
+import { getSessionUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+export default async function Dashboard() {
+  const user = await getSessionUser();
+  if (!user) {
+    redirect('/login');
+  }
 
-export default function Dashboard() {
-  const router = useRouter();
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  useEffect(() => {
-    if (!user) return router.push("/login");
-    if (user.role === "admin") router.push("/dashboard/admin");
-    else router.push("/dashboard/user");
-  }, [router, user]);
-
-  return <div>Redirecting to your dashboard...</div>;
+  // Redirect based on role
+  if (user.role === 'ADMIN') {
+    redirect('/dashboard/admin');
+  } else if (user.role === 'HEAD') {
+    redirect('/dashboard/head');
+  } else if (user.role === 'STAFF') {
+    redirect('/dashboard/staff');
+  } else if (user.role === 'VIEWER') {
+    redirect('/dashboard/viewer');
+  } else {
+    redirect('/login'); // Unknown role
+  }
 }

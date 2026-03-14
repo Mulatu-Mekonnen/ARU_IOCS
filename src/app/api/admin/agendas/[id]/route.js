@@ -13,7 +13,14 @@ export async function GET(request, { params }) {
 
   const agenda = await prisma.agenda.findUnique({
     where: { id: params.id },
-    include: { createdBy: true, senderOffice: true, receiverOffice: true, approvalHistories: { include: { actionBy: true } } },
+    include: {
+      createdBy: true,
+      senderOffice: true,
+      receiverOffice: true,
+      currentOffice: true,
+      approvalHistories: { include: { actionBy: true } },
+      routes: { include: { fromOffice: true, toOffice: true, routedBy: true } },
+    },
   });
   if (!agenda) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -72,11 +79,19 @@ export async function PATCH(request, { params }) {
 
     let status;
     const data = {};
-    if (action === "approve") status = "APPROVED";
-    if (action === "reject") status = "REJECTED";
+
+    if (action === "approve") {
+      status = "APPROVED";
+    }
+    if (action === "reject") {
+      status = "REJECTED";
+    }
     if (action === "forward") {
       status = "FORWARDED";
-      if (receiverOfficeId) data.receiverOfficeId = receiverOfficeId;
+      if (receiverOfficeId) {
+        data.receiverOfficeId = receiverOfficeId;
+        data.currentOfficeId = receiverOfficeId;
+      }
     }
     data.status = status;
 
@@ -89,11 +104,26 @@ export async function PATCH(request, { params }) {
     await prisma.approvalHistory.create({
       data: {
         agendaId: params.id,
-        action,
+        action: action.toUpperCase(),
         comment,
         actionById: auth.user.id,
       },
     });
+
+    // insert routing record when forwarding
+    if (action === "forward") {
+      const agenda = await prisma.agenda.findUnique({ where: { id: params.id } });
+      if (agenda) {
+        await prisma.agendaRoute.create({
+          data: {
+            agendaId: params.id,
+            fromOfficeId: agenda.currentOfficeId || agenda.senderOfficeId,
+            toOfficeId: receiverOfficeId,
+            routedById: auth.user.id,
+          },
+        });
+      }
+    }
 
     return NextResponse.json(updated);
   } catch (error) {

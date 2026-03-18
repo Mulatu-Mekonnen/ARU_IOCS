@@ -21,37 +21,20 @@ export default function HeadDetailClient({ user, agendaId }) {
     setLoading(true);
     setError("");
     try {
-      console.log('Loading agenda details for ID:', agendaId, typeof agendaId);
-
       const [agendaRes, timelineRes] = await Promise.all([
         fetch(`/api/admin/agendas/${agendaId}`, { credentials: "include" }),
         fetch(`/api/agendas/${agendaId}/timeline`, { credentials: "include" })
       ]);
 
-      console.log('Agenda response status:', agendaRes.status);
-      console.log('Timeline response status:', timelineRes.status);
-
-      if (!agendaRes.ok) {
-        const errorData = await agendaRes.json();
-        console.error('Agenda API error:', errorData);
-        throw new Error(errorData.error || `Failed to load agenda details (${agendaRes.status})`);
-      }
-      if (!timelineRes.ok) {
-        const errorData = await timelineRes.json();
-        console.error('Timeline API error:', errorData);
-        throw new Error(errorData.error || `Failed to load timeline (${timelineRes.status})`);
-      }
+      if (!agendaRes.ok) throw new Error("Failed to load agenda details");
+      if (!timelineRes.ok) throw new Error("Failed to load timeline");
 
       const agendaData = await agendaRes.json();
       const timelineData = await timelineRes.json();
 
-      console.log('Agenda data:', agendaData);
-      console.log('Timeline data:', timelineData);
-
       setAgenda(agendaData);
       setTimeline(timelineData.timeline || []);
     } catch (err) {
-      console.error('Error in loadAgendaDetails:', err);
       setError(err.message || "Failed to load communication details");
     } finally {
       setLoading(false);

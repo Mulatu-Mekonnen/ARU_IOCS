@@ -156,236 +156,313 @@ export default function HeadDashboardClient({ user }) {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-6">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Welcome{user?.name ? `, ${user.name}` : ""} 👋
-          </h1>
-          <p className="text-gray-600 mt-1">You have {stats.pending} approval task{stats.pending === 1 ? "" : "s"} waiting.</p>
-          {actionError && (
-            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">
-              <span className="font-semibold">Error:</span> {actionError}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-4 md:p-6">
+      <div className="mx-auto w-full max-w-7xl space-y-10">
+        <header className="rounded-2xl bg-white/60 backdrop-blur border border-white/60 shadow-sm p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-semibold text-slate-900">
+                Hello{user?.name ? `, ${user.name}` : ""} 👋
+              </h1>
+              <p className="mt-1 text-sm text-slate-600 max-w-xl">
+                Review your agendas, take actions, and keep your team moving.
+              </p>
+            </div>
+
+
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Pending Approvals</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">{stats.pending}</p>
+              </div>
+              <div className="rounded-full bg-yellow-50 p-3">
+                <span className="text-yellow-600">●</span>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-500">Items needing your decision</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Forwarded</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">{stats.forwarded}</p>
+              </div>
+              <div className="rounded-full bg-blue-50 p-3">
+                <span className="text-blue-600">↪</span>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-500">Communications you’ve routed</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Approved</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">{stats.approved}</p>
+              </div>
+              <div className="rounded-full bg-green-50 p-3">
+                <span className="text-green-600">✔</span>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-500">Completed approvals</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Rejected</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">{stats.rejected}</p>
+              </div>
+              <div className="rounded-full bg-red-50 p-3">
+                <span className="text-red-600">✖</span>
+              </div>
+            </div>
+            <p className="mt-4 text-xs text-slate-500">Rejected communications</p>
+          </div>
+        </div>
+
+        {actionError && (
+          <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+            {actionError}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3 text-sm text-slate-700">
+              <span className="font-medium">Filter:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Statuses</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="FORWARDED">Forwarded</option>
+                <option value="ARCHIVED">Archived</option>
+              </select>
+            </div>
+
+            <div className="text-sm text-slate-600">
+              Showing {agendas.length} item{agendas.length === 1 ? "" : "s"}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl bg-white shadow-sm border border-slate-200">
+            <table className="min-w-[900px] w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
+                <tr>
+                  <th className="p-3">ID</th>
+                  <th className="p-3">Title</th>
+                  <th className="p-3">Sender</th>
+                  <th className="p-3">Receiver</th>
+                  <th className="p-3">Current Office</th>
+                  <th className="p-3">Created By</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3">Created At</th>
+                  <th className="p-3">Attachment</th>
+                  <th className="p-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedAgendas.map((agenda) => {
+                  const attachmentUrl = agenda.attachmentUrl || agenda.attachment;
+                  return (
+                    <tr key={agenda.id} className="border-t hover:bg-slate-50">
+                      <td className="p-3 text-sm text-slate-600">{agenda.id}</td>
+                      <td className="p-3 font-medium text-slate-900">{agenda.title}</td>
+                      <td className="p-3">{agenda.senderOffice?.name || "-"}</td>
+                      <td className="p-3">{agenda.receiverOffice?.name || "-"}</td>
+                      <td className="p-3">{agenda.currentOffice?.name || "-"}</td>
+                      <td className="p-3">{agenda.createdBy?.name}</td>
+                      <td className="p-3">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm ${statusBadge(
+                            agenda.status
+                          )}`}
+                        >
+                          {agenda.status}
+                        </span>
+                      </td>
+                      <td className="p-3">{new Date(agenda.createdAt).toLocaleDateString()}</td>
+                      <td className="p-3">
+                        {attachmentUrl ? (
+                          <div className="flex flex-wrap gap-2">
+                            <a
+                              href={attachmentUrl}
+                              className="text-blue-600 hover:text-blue-800 underline"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Download
+                            </a>
+                            {attachmentUrl.toLowerCase().endsWith(".pdf") && (
+                              <button
+                                onClick={() => openPdfPreview(attachmentUrl)}
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                Preview
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td className="p-3 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => openModal("timeline", agenda.id)}
+                          className="px-3 py-1 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
+                        >
+                          Timeline
+                        </button>
+                        <button
+                          onClick={() => openModal("routing", agenda.id)}
+                          className="px-3 py-1 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
+                        >
+                          Routing
+                        </button>
+                        {agenda.status === "PENDING" && (
+                          <>
+                            <button
+                              onClick={() => performAction(agenda.id, "approve")}
+                              disabled={actionLoadingId === agenda.id}
+                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => performAction(agenda.id, "reject")}
+                              disabled={actionLoadingId === agenda.id}
+                              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              onClick={() => openForwardModal(agenda.id)}
+                              disabled={actionLoadingId === agenda.id}
+                              className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Forward
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="md:hidden space-y-4">
+            {sortedAgendas.map((agenda) => {
+              const attachmentUrl = agenda.attachmentUrl || agenda.attachment;
+              return (
+                <article key={agenda.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{agenda.title}</p>
+                      <p className="text-xs text-slate-500">ID: {agenda.id}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs ${statusBadge(agenda.status)}`}> {agenda.status} </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-slate-600">
+                    <div>
+                      <div className="font-medium">Sender</div>
+                      <div>{agenda.senderOffice?.name || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="font-medium">Receiver</div>
+                      <div>{agenda.receiverOffice?.name || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="font-medium">Created</div>
+                      <div>{new Date(agenda.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <div>
+                      <div className="font-medium">By</div>
+                      <div>{agenda.createdBy?.name || "-"}</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => openModal("timeline", agenda.id)}
+                      className="px-3 py-1 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
+                    >
+                      Timeline
+                    </button>
+                    <button
+                      onClick={() => openModal("routing", agenda.id)}
+                      className="px-3 py-1 bg-slate-100 text-slate-700 rounded hover:bg-slate-200"
+                    >
+                      Routing
+                    </button>
+                    {agenda.status === "PENDING" && (
+                      <>
+                        <button
+                          onClick={() => performAction(agenda.id, "approve")}
+                          disabled={actionLoadingId === agenda.id}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => performAction(agenda.id, "reject")}
+                          disabled={actionLoadingId === agenda.id}
+                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => openForwardModal(agenda.id)}
+                          disabled={actionLoadingId === agenda.id}
+                          className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Forward
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {total > agendas.length && (
+            <div className="mt-4 flex flex-col items-center justify-between gap-3 md:flex-row">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="px-4 py-2 bg-white border border-slate-200 rounded shadow-sm disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-slate-600">
+                Page {page} of {Math.ceil(total / 20)}
+              </span>
+              <button
+                disabled={page * 20 >= total}
+                onClick={() => setPage((p) => p + 1)}
+                className="px-4 py-2 bg-white border border-slate-200 rounded shadow-sm disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>
-
-        <div className="flex items-center gap-4">
-          <button className="relative text-gray-500 hover:text-gray-700">
-            <Bell className="w-6 h-6" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              3
-            </span>
-          </button>
-
-          <div className="relative">
-            <button
-              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-              className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
-            >
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                {user?.name ? user.name.charAt(0).toUpperCase() : "H"}
-              </div>
-              <ChevronDown className="w-4 h-4" />
-            </button>
-
-            {profileDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="font-semibold">{user?.name || "Head User"}</div>
-                  <div className="text-sm text-gray-500">{user?.role || "Head"}</div>
-                </div>
-                <button className="flex items-center gap-2 w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100">
-                  <User className="w-4 h-4" />
-                  Profile
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-left text-gray-700 hover:bg-red-50 hover:text-red-600"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
-          <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
-          <p className="text-xs text-gray-500 mt-1">Items needing your decision</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-          <p className="text-sm font-medium text-gray-600">Forwarded</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.forwarded}</p>
-          <p className="text-xs text-gray-500 mt-1">Communications you’ve routed</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
-          <p className="text-sm font-medium text-gray-600">Approved</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.approved}</p>
-          <p className="text-xs text-gray-500 mt-1">Completed approvals</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
-          <p className="text-sm font-medium text-gray-600">Rejected</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.rejected}</p>
-          <p className="text-xs text-gray-500 mt-1">Rejected communications</p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-700">Filter:</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">All Statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="FORWARDED">Forwarded</option>
-            <option value="ARCHIVED">Archived</option>
-          </select>
-        </div>
-
-        <div className="text-sm text-gray-600">
-          Showing {agendas.length} item{agendas.length === 1 ? "" : "s"}
-        </div>
-      </div>
-
-      <table className="w-full border rounded-lg bg-arsiLight shadow">
-        <thead className="bg-arsiLight text-left">
-          <tr>
-            <th className="p-3">ID</th>
-            <th className="p-3">Title</th>
-            <th className="p-3">Sender</th>
-            <th className="p-3">Receiver</th>
-            <th className="p-3">Current Office</th>
-            <th className="p-3">Created By</th>
-            <th className="p-3">Status</th>
-            <th className="p-3">Created At</th>
-            <th className="p-3">Attachment</th>
-            <th className="p-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedAgendas.map((agenda) => {
-            const attachmentUrl = agenda.attachmentUrl || agenda.attachment;
-            return (
-              <tr key={agenda.id} className="border-t">
-                <td className="p-3 text-sm">{agenda.id}</td>
-                <td className="p-3">{agenda.title}</td>
-                <td className="p-3">{agenda.senderOffice?.name || "-"}</td>
-                <td className="p-3">{agenda.receiverOffice?.name || "-"}</td>
-                <td className="p-3">{agenda.currentOffice?.name || "-"}</td>
-                <td className="p-3">{agenda.createdBy?.name}</td>
-                <td className="p-3">
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm ${statusBadge(
-                      agenda.status
-                    )}`}
-                  >
-                    {agenda.status}
-                  </span>
-                </td>
-                <td className="p-3">{new Date(agenda.createdAt).toLocaleDateString()}</td>
-                <td className="p-3">
-                  {attachmentUrl ? (
-                    <div className="space-x-2">
-                      <a
-                        href={attachmentUrl}
-                        className="text-arsiBlue underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Download
-                      </a>
-                      {attachmentUrl.toLowerCase().endsWith('.pdf') && (
-                        <button
-                          onClick={() => openPdfPreview(attachmentUrl)}
-                          className="text-arsiBlue underline"
-                        >
-                          Preview
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td className="p-3 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => openModal("timeline", agenda.id)}
-                    className="px-3 py-1 bg-gray-200 rounded"
-                  >
-                    Timeline
-                  </button>
-                  <button
-                    onClick={() => openModal("routing", agenda.id)}
-                    className="px-3 py-1 bg-gray-200 rounded"
-                  >
-                    Routing
-                  </button>
-                  {agenda.status === "PENDING" && (
-                    <>
-                      <button
-                        onClick={() => performAction(agenda.id, "approve")}
-                        disabled={actionLoadingId === agenda.id}
-                        className="px-3 py-1 bg-arsiBlue text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => performAction(agenda.id, "reject")}
-                        disabled={actionLoadingId === agenda.id}
-                        className="px-3 py-1 bg-red-500 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Reject
-                      </button>
-                      <button
-                        onClick={() => openForwardModal(agenda.id)}
-                        disabled={actionLoadingId === agenda.id}
-                        className="px-3 py-1 bg-blue-500 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Forward
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {total > agendas.length && (
-        <div className="mt-4 flex justify-between">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span>
-            Page {page} of {Math.ceil(total / 20)}
-          </span>
-          <button
-            disabled={page * 20 >= total}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-      )}
 
       {modal.type && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -498,34 +575,37 @@ export default function HeadDashboardClient({ user }) {
       {/* office staff section */}
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-3">Staff in Your Office</h2>
-        <table className="w-full border rounded-lg bg-arsiLight shadow">
-          <thead className="bg-arsiLight text-left">
-            <tr>
-              <th className="p-3">Name</th>
-              <th className="p-3">Email</th>
-              <th className="p-3">Role</th>
-              <th className="p-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {staff.map((u) => (
-              <tr key={u.id} className="border-t hover:bg-gray-50">
-                <td className="p-3">{u.name}</td>
-                <td className="p-3">{u.email}</td>
-                <td className="p-3">{u.role}</td>
-                <td className="p-3">{u.active ? "Active" : "Inactive"}</td>
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-sm border border-slate-200">
+          <table className="min-w-[600px] w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500">
+              <tr>
+                <th className="p-3">Name</th>
+                <th className="p-3">Email</th>
+                <th className="p-3">Role</th>
+                <th className="p-3">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {staff.map((u) => (
+                <tr key={u.id} className="border-t hover:bg-slate-50">
+                  <td className="p-3">{u.name}</td>
+                  <td className="p-3">{u.email}</td>
+                  <td className="p-3">{u.role}</td>
+                  <td className="p-3">{u.active ? "Active" : "Inactive"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
       {/* System Announcements */}
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-3">System Announcements</h2>
-              <div className="bg-white rounded-lg shadow p-4">
-                <AnnouncementsList />
-              </div>
-            </div>
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-3">System Announcements</h2>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+          <AnnouncementsList />
+        </div>
+      </div>
     </div>
   );
 }

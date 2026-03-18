@@ -48,11 +48,9 @@ export default function HeadSidebar({ user }) {
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <FileText className="w-6 h-6 text-white" />
-          </div>
+          <User className="w-8 h-8 text-gray-500" />
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">HEAD Panel</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Head Panel</h2>
 
           </div>
         </div>

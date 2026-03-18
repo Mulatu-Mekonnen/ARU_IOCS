@@ -11,8 +11,17 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
+  // Next.js dynamic route params are async, so we await them first
+  const { id: rawId } = await params;
+  console.log('API params rawId:', rawId, typeof rawId);
+  const id = parseInt(rawId, 10);
+  console.log('Parsed ID:', id, isNaN(id));
+  if (isNaN(id)) {
+    return NextResponse.json({ error: "Invalid agenda id" }, { status: 400 });
+  }
+
   const agenda = await prisma.agenda.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       createdBy: true,
       senderOffice: true,

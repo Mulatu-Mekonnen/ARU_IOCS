@@ -129,8 +129,23 @@ export default function HeadDetailClient({ user, agendaId }) {
             Back to Pending Approvals
           </Link>
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-700 font-semibold">Error</p>
-            <p className="text-red-600 mt-2">{error || "Communication not found"}</p>
+            <p className="text-red-700 font-semibold">Agenda Not Found</p>
+            <p className="text-red-600 mt-2">
+              The agenda with ID "{agendaId}" does not exist or you don't have permission to view it.
+            </p>
+            <p className="text-red-500 text-sm mt-2">
+              Please check that the agenda exists and you have the correct permissions.
+              If you're testing, make sure to run <code className="bg-red-100 px-1 rounded">npx prisma db seed</code> to create test data.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/dashboard/head/pending"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Pending Approvals
+              </Link>
+            </div>
           </div>
         </div>
       </div>

@@ -42,6 +42,7 @@ export default function AdminLayout({ children }) {
     { name: "Announcements", href: "/dashboard/admin/announcements", icon: Megaphone },
     { name: "Reports", href: "/dashboard/admin/reports", icon: FileText },
     { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: Shield },
+    { name: "Notifications", href: "/dashboard/admin/notifications", icon: Bell },
     { name: "Settings", href: "/dashboard/admin/settings", icon: Settings },
   ];
 
@@ -111,11 +112,9 @@ export default function AdminLayout({ children }) {
                 className="md:hidden text-gray-500 hover:text-gray-700"
               >
                 <Menu className="w-6 h-6" />
-              
               </button>
-             
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome{user?.name ? `, ${user.name}` : ""} 👋</h1>
             </div>
-         <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome{user?.name ? `, ${user.name}` : ""} 👋</h1>
             <div className="flex items-center gap-4">
               <button className="relative text-gray-500 hover:text-gray-700">
                 <Bell className="w-6 h-6" />

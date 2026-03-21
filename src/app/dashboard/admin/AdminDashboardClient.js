@@ -75,36 +75,42 @@ export default function AdminDashboardClient() {
           title="Total Users"
           value={data.totalUsers || 0}
           icon={Users}
+          href="/dashboard/admin/users"
           color="blue"
         />
         <StatCard
           title="Total Offices"
           value={data.totalOffices || 0}
           icon={Building}
+          href="/dashboard/admin/offices"
           color="green"
         />
         <StatCard
           title="Total Agendas"
           value={data.totalAgendas || 0}
           icon={Calendar}
+          href="/dashboard/admin/agendas"
           color="purple"
         />
         <StatCard
           title="Pending"
           value={data.pendingAgendas || 0}
           icon={Clock}
+          href="/dashboard/admin/agendas?status=pending"
           color="yellow"
         />
         <StatCard
           title="Approved"
           value={data.approvedAgendas || 0}
           icon={CheckCircle}
+          href="/dashboard/admin/agendas?status=approved"
           color="green"
         />
         <StatCard
           title="Rejected"
           value={data.rejectedAgendas || 0}
           icon={XCircle}
+          href="/dashboard/admin/agendas?status=rejected"
           color="red"
         />
       </div>

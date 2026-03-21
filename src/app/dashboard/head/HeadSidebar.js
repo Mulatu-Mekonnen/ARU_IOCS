@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Clock,
-  FileText,
   Archive,
   BarChart3,
   Bell,
@@ -18,7 +17,6 @@ import { useState, useEffect } from 'react';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard/head', icon: LayoutDashboard },
   { name: 'Pending Approvals', href: '/dashboard/head/pending', icon: Clock },
-  { name: 'Detail', href: '/dashboard/head/detail', icon: FileText },
   { name: 'Reports', href: '/dashboard/head/reports', icon: BarChart3 },
   { name: 'Archive', href: '/dashboard/head/archive', icon: Archive },
   { name: 'Notifications', href: '/dashboard/head/notifications', icon: Bell },

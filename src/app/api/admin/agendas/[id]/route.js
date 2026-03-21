@@ -14,9 +14,9 @@ export async function GET(request, { params }) {
   // Next.js dynamic route params are async, so we await them first
   const { id: rawId } = await params;
   console.log('API params rawId:', rawId, typeof rawId);
-  const id = parseInt(rawId, 10);
-  console.log('Parsed ID:', id, isNaN(id));
-  if (isNaN(id)) {
+  // Prisma uses string IDs (cuid), so no need to parse as int
+  const id = rawId;
+  if (!id || typeof id !== 'string') {
     return NextResponse.json({ error: "Invalid agenda id" }, { status: 400 });
   }
 
@@ -38,7 +38,10 @@ export async function GET(request, { params }) {
   // enforce role-specific visibility
   if (auth.user.role === "HEAD") {
     const user = await prisma.user.findUnique({ where: { id: auth.user.id } });
-    if (agenda.senderOfficeId !== user.officeId && agenda.receiverOfficeId !== user.officeId) {
+    if (!user?.officeId) {
+      return NextResponse.json({ error: "User not assigned to an office" }, { status: 403 });
+    }
+    if (agenda.senderOfficeId !== user.officeId && agenda.receiverOfficeId !== user.officeId && agenda.currentOfficeId !== user.officeId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }
@@ -63,6 +66,12 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    // Next.js dynamic route params are async, so we await them first
+    const { id } = await params;
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json({ error: "Invalid agenda id" }, { status: 400 });
+    }
+
     const { action, comment, receiverOfficeId } = await request.json();
     const valid = ["approve", "reject", "forward"];
     if (!valid.includes(action)) {
@@ -70,7 +79,7 @@ export async function PATCH(request, { params }) {
     }
 
     // load existing agenda for permission check
-    const agenda = await prisma.agenda.findUnique({ where: { id: params.id } });
+    const agenda = await prisma.agenda.findUnique({ where: { id } });
     if (!agenda) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -106,14 +115,14 @@ export async function PATCH(request, { params }) {
     data.status = status;
 
     const updated = await prisma.agenda.update({
-      where: { id: params.id },
+      where: { id },
       data,
     });
 
     // record history
     await prisma.approvalHistory.create({
       data: {
-        agendaId: params.id,
+        agendaId: id,
         action: action.toUpperCase(),
         comment,
         actionById: auth.user.id,
@@ -122,11 +131,11 @@ export async function PATCH(request, { params }) {
 
     // insert routing record when forwarding
     if (action === "forward") {
-      const agenda = await prisma.agenda.findUnique({ where: { id: params.id } });
+      const agenda = await prisma.agenda.findUnique({ where: { id } });
       if (agenda) {
         await prisma.agendaRoute.create({
           data: {
-            agendaId: params.id,
+            agendaId: id,
             fromOfficeId: agenda.currentOfficeId || agenda.senderOfficeId,
             toOfficeId: receiverOfficeId,
             routedById: auth.user.id,

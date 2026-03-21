@@ -55,6 +55,7 @@ export async function GET(request) {
           OR: [
             { senderOfficeId: user.officeId },
             { receiverOfficeId: user.officeId },
+            { currentOfficeId: user.officeId },
           ],
         };
 

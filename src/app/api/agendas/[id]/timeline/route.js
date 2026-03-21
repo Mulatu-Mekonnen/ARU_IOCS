@@ -8,8 +8,18 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
+  // Next.js dynamic route params are async, so we await them first
+  const { id: rawId } = await params;
+  console.log('Timeline API params rawId:', rawId, typeof rawId);
+  // Prisma uses string IDs (cuid), so no need to parse as int
+  const id = rawId;
+  console.log('Timeline API parsed ID:', id);
+  if (!id || typeof id !== 'string') {
+    return NextResponse.json({ error: "Invalid agenda id" }, { status: 400 });
+  }
+
   const agenda = await prisma.agenda.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { approvalHistories: { include: { actionBy: true } } },
   });
 
@@ -20,7 +30,7 @@ export async function GET(request, { params }) {
   // enforce role-specific visibility (same rules as the main agenda GET)
   if (auth.user.role === "HEAD") {
     const user = await prisma.user.findUnique({ where: { id: auth.user.id } });
-    if (agenda.senderOfficeId !== user.officeId && agenda.receiverOfficeId !== user.officeId) {
+    if (agenda.senderOfficeId !== user.officeId && agenda.receiverOfficeId !== user.officeId && agenda.currentOfficeId !== user.officeId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
   }

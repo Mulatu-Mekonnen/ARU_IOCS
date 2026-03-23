@@ -602,7 +602,7 @@ export default function HeadDashboardClient({ user }) {
       {/* System Announcements */}
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-3">System Announcements</h2>
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        <div className="bg-white  p-4">
           <AnnouncementsList />
         </div>
       </div>

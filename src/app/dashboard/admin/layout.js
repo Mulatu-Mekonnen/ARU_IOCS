@@ -26,12 +26,33 @@ export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [notificationStats, setNotificationStats] = useState({ unread: 0 });
 
   useEffect(() => {
     fetch("/api/auth/session", { credentials: "include" })
       .then((res) => res.json())
       .then((userData) => setUser(userData))
       .catch((err) => console.error("Failed to fetch user:", err));
+
+    // Fetch notification stats
+    const fetchNotificationStats = () => {
+      fetch('/api/admin/notifications')
+        .then(r => r.json())
+        .then(data => {
+          // Calculate unread count based on localStorage read status
+          const readNotifications = JSON.parse(localStorage.getItem('admin_read_notifications') || '[]');
+          const unreadCount = data.notifications.filter(n => !readNotifications.includes(n.id)).length;
+          setNotificationStats({ unread: unreadCount });
+        })
+        .catch(() => setNotificationStats({ unread: 0 }));
+    };
+
+    fetchNotificationStats(); // Initial fetch
+
+    // Set up periodic refresh every 30 seconds
+    const interval = setInterval(fetchNotificationStats, 30000);
+
+    return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
   const navItems = [
@@ -116,12 +137,14 @@ export default function AdminLayout({ children }) {
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome{user?.name ? `, ${user.name}` : ""} 👋</h1>
             </div>
             <div className="flex items-center gap-4">
-              <button className="relative text-gray-500 hover:text-gray-700">
+              <Link href="/dashboard/admin/notifications" className="relative text-gray-500 hover:text-gray-700">
                 <Bell className="w-6 h-6" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  3
-                </span>
-              </button>
+                {notificationStats.unread > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {notificationStats.unread > 99 ? '99+' : notificationStats.unread}
+                  </span>
+                )}
+              </Link>
 
               <div className="relative">
                 <button

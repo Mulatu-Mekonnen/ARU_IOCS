@@ -3,6 +3,7 @@
 import { getSessionUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import HeadSidebar from './HeadSidebar';
+import Link from 'next/link';
 import { Menu, Bell, ChevronDown, User, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -15,6 +16,7 @@ export default function Layout({ children }) {
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [actionError, setActionError] = useState("");
   const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, forwarded: 0 });
+  const [notificationStats, setNotificationStats] = useState({ unread: 0 });
 
   useEffect(() => {
     fetch("/api/auth/session", { credentials: "include" })
@@ -27,6 +29,21 @@ export default function Layout({ children }) {
       .then(r => r.json())
       .then(data => setStats({ ...stats, pending: data.total || 0 }))
       .catch(() => setStats({ ...stats, pending: 0 }));
+
+    // Fetch notification stats
+    const fetchNotificationStats = () => {
+      fetch('/api/dashboard/head/notifications', { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => setNotificationStats(data.stats || { unread: 0 }))
+        .catch(() => setNotificationStats({ unread: 0 }));
+    };
+
+    fetchNotificationStats(); // Initial fetch
+
+    // Set up periodic refresh every 30 seconds
+    const interval = setInterval(fetchNotificationStats, 30000);
+
+    return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
   const handleLogout = async () => {
@@ -37,7 +54,9 @@ export default function Layout({ children }) {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar - Hidden on mobile, shown on md+ or when toggled */}
-      <div className={`${sidebarOpen ? 'block' : 'hidden'} md:block fixed md:relative z-50 md:z-auto`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg transform transition-transform duration-300 ease-in-out${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 md:static md:inset-0`}>
         <HeadSidebar user={user} />
       </div>
 
@@ -77,12 +96,14 @@ export default function Layout({ children }) {
             </div>
             
             <div className="flex items-center gap-4">
-              <button className="relative text-gray-500 hover:text-gray-700">
+              <Link href="/dashboard/head/notifications" className="relative text-gray-500 hover:text-gray-700">
                 <Bell className="w-6 h-6" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  3
-                </span>
-              </button>
+                {notificationStats.unread > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {notificationStats.unread > 99 ? '99+' : notificationStats.unread}
+                  </span>
+                )}
+              </Link>
 
               <div className="relative">
                 <button
@@ -118,7 +139,7 @@ export default function Layout({ children }) {
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto white bg-gray-50 p-6">
           {children}
         </main>
       </div>

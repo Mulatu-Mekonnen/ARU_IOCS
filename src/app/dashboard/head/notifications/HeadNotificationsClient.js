@@ -6,6 +6,7 @@ import { Bell, CheckCircle, Clock, AlertCircle, XCircle, ArrowRight, Eye, CheckC
 
 export default function HeadNotificationsClient({ user }) {
   const [notifications, setNotifications] = useState([]);
+  const [stats, setStats] = useState({ total: 0, unread: 0, highPriority: 0, today: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -18,61 +19,20 @@ export default function HeadNotificationsClient({ user }) {
     setLoading(true);
     setError("");
     try {
-      // Mock data - replace with actual API call
-      const mockNotifications = [
-        {
-          id: 1,
-          type: 'new_communication',
-          title: 'New Communication Received',
-          message: 'A new communication "Q4 Budget Review" requires your approval.',
-          timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-          read: false,
-          priority: 'high',
-          actionUrl: '/dashboard/head/pending'
-        },
-        {
-          id: 2,
-          type: 'approval_update',
-          title: 'Communication Approved',
-          message: 'Communication "Staff Meeting Minutes" has been approved.',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-          read: false,
-          priority: 'medium',
-          actionUrl: '/dashboard/head/detail/cmmpwyg4e0001qw3c53h0e86s'
-        },
-        {
-          id: 3,
-          type: 'pending_reminder',
-          title: 'Pending Approvals Reminder',
-          message: 'You have 5 communications waiting for approval.',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 hours ago
-          read: true,
-          priority: 'low',
-          actionUrl: '/dashboard/head/pending'
-        },
-        {
-          id: 4,
-          type: 'forwarded_communication',
-          title: 'Communication Forwarded',
-          message: 'Communication "IT Infrastructure Update" has been forwarded to Finance Office.',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 hours ago
-          read: true,
-          priority: 'medium',
-          actionUrl: '/dashboard/head/detail/cmmq137ni0001qwpw38c2sttc'
-        },
-        {
-          id: 5,
-          type: 'rejected_communication',
-          title: 'Communication Rejected',
-          message: 'Communication "Office Renovation Proposal" has been rejected.',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-          read: true,
-          priority: 'low',
-          actionUrl: '/dashboard/head/detail/cmmsugboy0001qwy0nan320qu'
-        }
-      ];
-      setNotifications(mockNotifications);
+      const response = await fetch('/api/dashboard/head/notifications', {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to load notifications (${response.status})`);
+      }
+
+      const data = await response.json();
+      setNotifications(data.notifications || []);
+      setStats(data.stats || { total: 0, unread: 0, highPriority: 0, today: 0 });
     } catch (err) {
+      console.error('Error loading notifications:', err);
       setError(err.message || "Failed to load notifications");
     } finally {
       setLoading(false);
@@ -81,12 +41,21 @@ export default function HeadNotificationsClient({ user }) {
 
   function getNotificationIcon(type) {
     switch (type) {
-      case 'new_communication': return <AlertCircle className="w-5 h-5 text-blue-600" />;
-      case 'approval_update': return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'pending_reminder': return <Clock className="w-5 h-5 text-yellow-600" />;
-      case 'forwarded_communication': return <ArrowRight className="w-5 h-5 text-purple-600" />;
-      case 'rejected_communication': return <XCircle className="w-5 h-5 text-red-600" />;
-      default: return <Bell className="w-5 h-5 text-gray-600" />;
+      case 'new_communication':
+        return <AlertCircle className="w-5 h-5 text-blue-600" />;
+      case 'communication_created':
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'approval_update':
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'pending_reminder':
+        return <Clock className="w-5 h-5 text-yellow-600" />;
+      case 'forwarded_communication':
+      case 'communication_forwarded':
+        return <ArrowRight className="w-5 h-5 text-purple-600" />;
+      case 'rejected_communication':
+        return <XCircle className="w-5 h-5 text-red-600" />;
+      default:
+        return <Bell className="w-5 h-5 text-gray-600" />;
     }
   }
 
@@ -113,7 +82,7 @@ export default function HeadNotificationsClient({ user }) {
     );
   }
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = stats.unread;
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
@@ -123,7 +92,7 @@ export default function HeadNotificationsClient({ user }) {
             <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
             <p className="text-gray-600 mt-2">Stay updated with communication activities and approvals.</p>
           </div>
-          {unreadCount > 0 && (
+          {stats.unread > 0 && (
             <button
               onClick={markAllAsRead}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
@@ -146,7 +115,7 @@ export default function HeadNotificationsClient({ user }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total</p>
-              <p className="text-2xl font-bold text-gray-900">{notifications.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
             </div>
             <Bell className="w-8 h-8 text-gray-600" />
           </div>
@@ -155,7 +124,7 @@ export default function HeadNotificationsClient({ user }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Unread</p>
-              <p className="text-2xl font-bold text-blue-600">{unreadCount}</p>
+              <p className="text-2xl font-bold text-blue-600">{stats.unread}</p>
             </div>
             <AlertCircle className="w-8 h-8 text-blue-600" />
           </div>
@@ -164,9 +133,7 @@ export default function HeadNotificationsClient({ user }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">High Priority</p>
-              <p className="text-2xl font-bold text-red-600">
-                {notifications.filter(n => n.priority === 'high' && !n.read).length}
-              </p>
+              <p className="text-2xl font-bold text-red-600">{stats.highPriority}</p>
             </div>
             <XCircle className="w-8 h-8 text-red-600" />
           </div>
@@ -175,13 +142,7 @@ export default function HeadNotificationsClient({ user }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Today</p>
-              <p className="text-2xl font-bold text-green-600">
-                {notifications.filter(n => {
-                  const today = new Date();
-                  const notifDate = new Date(n.timestamp);
-                  return notifDate.toDateString() === today.toDateString();
-                }).length}
-              </p>
+              <p className="text-2xl font-bold text-green-600">{stats.today}</p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>

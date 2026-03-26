@@ -1,44 +1,26 @@
 import { useState } from 'react';
+import { router } from '@inertiajs/react';
 import AdminLayout from '../AdminLayout';
 import { ShieldCheck, Mail, ToggleRight, FileText, Settings, AlertTriangle } from "lucide-react";
 
-export default function Index({ systemSettings }) {
-  const [settings, setSettings] = useState(systemSettings);
+export default function Index({ settings: initialSettings }) {
+  const [settings, setSettings] = useState(initialSettings);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const toggle = (key) => {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
-    setSuccess("");
   };
 
   const handleNumberChange = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: Math.max(1, parseInt(value) || 0) }));
-    setSuccess("");
   };
 
-  const saveSettings = async () => {
+  const saveSettings = () => {
     setSaving(true);
-    setError("");
-    setSuccess("");
-    try {
-      const res = await fetch("/dashboard/admin/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-      if (res.ok) {
-        setSuccess("Settings saved successfully!");
-        setTimeout(() => setSuccess(""), 3000);
-      } else {
-        setError("Failed to save settings");
-      }
-    } catch (err) {
-      setError(err.message || "Failed to save settings");
-    } finally {
-      setSaving(false);
-    }
+    router.put('/dashboard/admin/settings', settings, {
+      onSuccess: () => setSaving(false),
+      onError: () => setSaving(false),
+    });
   };
 
   return (
@@ -48,18 +30,6 @@ export default function Index({ systemSettings }) {
           <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
           <p className="text-gray-600 mt-1">Configure system preferences and security options. Changes are applied immediately.</p>
         </div>
-
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-green-700">
-            {success}
-          </div>
-        )}
 
         <div className="grid grid-cols-1 gap-6">
           {/* Security Settings */}

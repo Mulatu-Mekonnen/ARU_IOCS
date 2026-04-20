@@ -103,7 +103,7 @@ export default function Index({ agendas, filters }) {
                       <div className="text-sm text-gray-600 truncate max-w-xs">{agenda.description}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                      {agenda.user?.name || 'Unknown'}
+                      {agenda.created_by?.name || 'Unknown'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(agenda.status)}`}>

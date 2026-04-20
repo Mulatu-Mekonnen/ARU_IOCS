@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useMemo } from 'react';
 import StaffLayout from '../StaffLayout';
 import { Bell, CheckCircle, Clock, AlertCircle, XCircle, ArrowRight, Eye } from 'lucide-react';

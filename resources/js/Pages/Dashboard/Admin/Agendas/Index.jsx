@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import AdminLayout from '../AdminLayout';
 import {
   Search,
@@ -18,6 +18,9 @@ export default function Index({ agendas, offices, filters }) {
   const [officeFilter, setOfficeFilter] = useState(filters.office || "");
   const [statusFilter, setStatusFilter] = useState(filters.status || "");
   const [currentPage, setCurrentPage] = useState(agendas.current_page);
+  const [viewAgenda, setViewAgenda] = useState(null);
+  const [forwarding, setForwarding] = useState({ agendaId: null, officeId: '' });
+  const [forwardError, setForwardError] = useState('');
 
   const handleSearch = () => {
     router.get('/dashboard/admin/agendas', {
@@ -45,6 +48,35 @@ export default function Index({ agendas, offices, filters }) {
       case 'FORWARDED': return 'bg-blue-100 text-blue-800';
       default: return 'bg-yellow-100 text-yellow-800';
     }
+  };
+
+  const performAction = (agendaId, action, extra = {}) => {
+    router.put(`/dashboard/admin/agendas/${agendaId}`, {
+      action,
+      ...extra,
+    }, {
+      preserveScroll: true,
+    });
+  };
+
+  const openForwardModal = (agendaId) => {
+    setForwardError('');
+    setForwarding({ agendaId, officeId: '' });
+  };
+
+  const closeForwardModal = () => {
+    setForwardError('');
+    setForwarding({ agendaId: null, officeId: '' });
+  };
+
+  const submitForward = () => {
+    if (!forwarding.officeId) {
+      setForwardError('Choose an office to forward to.');
+      return;
+    }
+
+    performAction(forwarding.agendaId, 'forward', { receiver_office_id: forwarding.officeId });
+    closeForwardModal();
   };
 
   return (
@@ -130,7 +162,7 @@ export default function Index({ agendas, offices, filters }) {
                       <div className="text-sm text-gray-600 truncate max-w-xs">{agenda.description}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                      {agenda.office?.name || "-"}
+                      {agenda.current_office?.name || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(agenda.status)}`}>
@@ -141,13 +173,49 @@ export default function Index({ agendas, offices, filters }) {
                       {new Date(agenda.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link
-                        href={`/dashboard/admin/agendas/${agenda.id}`}
-                        className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
-                        title="View Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setViewAgenda(agenda)}
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg shadow-sm text-sm font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-200 transition"
+                          title="View details"
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span className="hidden sm:inline">View</span>
+                        </button>
+
+                        {agenda.status === 'PENDING' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => performAction(agenda.id, 'approve')}
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg shadow-sm text-sm font-medium text-green-700 hover:bg-green-100 hover:border-green-300 transition"
+                              title="Approve"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              <span className="hidden sm:inline">Approve</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => performAction(agenda.id, 'reject')}
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg shadow-sm text-sm font-medium text-red-700 hover:bg-red-100 hover:border-red-300 transition"
+                              title="Reject"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              <span className="hidden sm:inline">Reject</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openForwardModal(agenda.id)}
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg shadow-sm text-sm font-medium text-purple-700 hover:bg-purple-100 hover:border-purple-300 transition"
+                              title="Forward"
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                              <span className="hidden sm:inline">Forward</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -190,6 +258,139 @@ export default function Index({ agendas, offices, filters }) {
             </div>
           )}
         </div>
+
+        {viewAgenda && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Agenda Details</h2>
+                  <p className="text-sm text-gray-500">ID #{viewAgenda.id}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewAgenda(null)}
+                  className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <XCircle className="w-5 h-5" />
+                  <span className="text-sm font-medium">Close</span>
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Title</p>
+                    <p className="mt-1 text-gray-900 font-semibold">{viewAgenda.title}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Status</p>
+                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(viewAgenda.status)}`}>
+                      {viewAgenda.status}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Created By</p>
+                    <p className="mt-1 text-gray-900">{viewAgenda.created_by?.name || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Created At</p>
+                    <p className="mt-1 text-gray-900">{new Date(viewAgenda.created_at).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Sender Office</p>
+                    <p className="mt-1 text-gray-900">{viewAgenda.sender_office?.name || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Receiver Office</p>
+                    <p className="mt-1 text-gray-900">{viewAgenda.receiver_office?.name || "—"}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Description</p>
+                  <p className="mt-2 text-gray-700 whitespace-pre-wrap">{viewAgenda.description || "—"}</p>
+                </div>
+
+                {viewAgenda.attachment_url && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <p className="text-sm font-medium text-gray-600">Attachment</p>
+                    <a
+                      href={viewAgenda.attachment_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                    >
+                      View File
+                      <ArrowRight className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setViewAgenda(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {forwarding.agendaId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+              <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                <h2 className="text-lg font-semibold text-gray-900">Forward Agenda</h2>
+                <button
+                  type="button"
+                  onClick={closeForwardModal}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Receiver Office</label>
+                  <select
+                    value={forwarding.officeId}
+                    onChange={(e) => setForwarding({ ...forwarding, officeId: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Choose office</option>
+                    {offices.map((o) => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                  </select>
+                  {forwardError && <p className="text-red-500 text-xs mt-2">{forwardError}</p>}
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={closeForwardModal}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitForward}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                  >
+                    Forward
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

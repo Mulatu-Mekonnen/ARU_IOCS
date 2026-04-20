@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useMemo } from 'react';
 import ViewerLayout from '../ViewerLayout';
 import { Search, X } from 'lucide-react';

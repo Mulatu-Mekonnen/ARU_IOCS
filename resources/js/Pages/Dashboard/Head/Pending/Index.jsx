@@ -33,12 +33,16 @@ export default function Index({ agendas: initialAgendas, offices }) {
 
       const payload = { action: reviewModal.type, comment: reviewModal.comment };
       if (reviewModal.type === "forward") {
-        payload.receiverOfficeId = reviewModal.officeId;
+        payload.receiver_office_id = reviewModal.officeId;
       }
 
       const res = await fetch(`/dashboard/head/pending/${reviewModal.agendaId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
         body: JSON.stringify(payload),
       });
 
@@ -95,18 +99,18 @@ export default function Index({ agendas: initialAgendas, offices }) {
                       <div className="text-sm font-medium text-gray-900">{agenda.title}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{agenda.user?.name || agenda.senderOffice?.name || "-"}</div>
+                      <div className="text-sm text-gray-900">{agenda.created_by?.name || agenda.sender_office?.name || "-"}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{agenda.office?.name || "-"}</div>
+                      <div className="text-sm text-gray-900">{agenda.current_office?.name || "-"}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(agenda.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {agenda.attachment ? (
+                      {agenda.attachment_url ? (
                         <a
-                          href={agenda.attachment}
+                          href={agenda.attachment_url}
                           className="text-blue-600 hover:text-blue-800 underline"
                           target="_blank"
                           rel="noopener noreferrer"

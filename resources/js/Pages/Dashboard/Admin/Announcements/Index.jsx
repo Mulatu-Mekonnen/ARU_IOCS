@@ -11,14 +11,14 @@ export default function Index({ announcements }) {
 
   const { data, setData, post, put, processing, errors, reset } = useForm({
     title: "",
-    body: "",
+    content: "",
   });
 
   const handleEdit = (announcement) => {
     setEditing(announcement);
     setData({
       title: announcement.title,
-      body: announcement.body,
+      content: announcement.content,
     });
     setShowForm(true);
   };
@@ -103,9 +103,9 @@ export default function Index({ announcements }) {
                   <tr key={a.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{a.title}</div>
-                      <div className="text-sm text-gray-500 line-clamp-2">{a.body}</div>
+                      <div className="text-sm text-gray-500 line-clamp-2">{a.content}</div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">{a.user?.name || 'Unknown'}</td>
+                    <td className="px-6 py-4 text-gray-600">{a.author?.name || 'Unknown'}</td>
                     <td className="px-6 py-4 text-gray-600">
                       {new Date(a.created_at).toLocaleDateString()}
                     </td>
@@ -207,13 +207,13 @@ export default function Index({ announcements }) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
                   <textarea
-                    value={data.body}
-                    onChange={(e) => setData('body', e.target.value)}
+                    value={data.content}
+                    onChange={(e) => setData('content', e.target.value)}
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
-                  {errors.body && <p className="text-red-500 text-xs mt-1">{errors.body}</p>}
+                  {errors.content && <p className="text-red-500 text-xs mt-1">{errors.content}</p>}
                 </div>
                 <div className="flex justify-end gap-3">
                   <button

@@ -1,6 +1,7 @@
+import React from 'react';
 import { useState, useMemo } from 'react';
 import StaffLayout from '../StaffLayout';
-import { Eye, Edit, Trash2, MoreVertical } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 function getStatusColor(status) {
   switch (status) {
@@ -14,9 +15,9 @@ function getStatusColor(status) {
 }
 
 export default function Index({ agendas: initialAgendas, filters }) {
-  const [agendas, setAgendas] = useState(initialAgendas.data || initialAgendas);
+  const [agendas] = useState(initialAgendas.data || initialAgendas);
   const [statusFilter, setStatusFilter] = useState(filters?.status || "");
-  const [page, setPage] = useState(1);
+  const [selectedAgenda, setSelectedAgenda] = useState(null);
 
   const filtered = useMemo(() => {
     if (!statusFilter) return agendas;
@@ -47,7 +48,6 @@ export default function Index({ agendas: initialAgendas, filters }) {
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
-                setPage(1);
               }}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
@@ -91,13 +91,14 @@ export default function Index({ agendas: initialAgendas, filters }) {
                       {new Date(agenda.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                      <a
-                        href={`/dashboard/staff/detail/${agenda.id}`}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAgenda(agenda)}
                         className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
                       >
                         <Eye className="w-4 h-4" />
                         View
-                      </a>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -111,6 +112,69 @@ export default function Index({ agendas: initialAgendas, filters }) {
             </div>
           )}
         </div>
+
+        {selectedAgenda && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
+              <div className="flex items-start justify-between border-b border-gray-200 p-5">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Communication Details</h2>
+                  <p className="mt-1 text-sm text-gray-500">View full information for this communication.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAgenda(null)}
+                  className="rounded-md px-2 py-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                >
+                  X
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <p className="text-xs font-semibold uppercase text-gray-500">Title</p>
+                  <p className="mt-1 text-sm text-gray-900">{selectedAgenda.title}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-xs font-semibold uppercase text-gray-500">Description</p>
+                  <p className="mt-1 rounded-lg bg-gray-50 p-3 text-sm text-gray-800">
+                    {selectedAgenda.description || "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-500">Sender Office</p>
+                  <p className="mt-1 text-sm text-gray-900">{selectedAgenda.sender_office?.name || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-500">Receiver Office</p>
+                  <p className="mt-1 text-sm text-gray-900">{selectedAgenda.receiver_office?.name || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-500">Status</p>
+                  <span className={`mt-1 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${getStatusColor(selectedAgenda.status)}`}>
+                    {selectedAgenda.status}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-500">Created At</p>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {new Date(selectedAgenda.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-gray-200 p-5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedAgenda(null)}
+                  className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </StaffLayout>
   );

@@ -30,7 +30,7 @@ class OfficeController extends Controller
 
         Office::create($validated);
 
-        return redirect()->back()->with('success', 'Office created successfully');
+        return redirect()->route('admin.offices.index')->with('success', 'Office created successfully');
     }
 
     public function update(Request $request, Office $office)
@@ -41,13 +41,13 @@ class OfficeController extends Controller
 
         $office->update($validated);
 
-        return redirect()->back()->with('success', 'Office updated successfully');
+        return redirect()->route('admin.offices.index')->with('success', 'Office updated successfully');
     }
 
     public function destroy(Office $office)
     {
         $office->delete();
 
-        return redirect()->back()->with('success', 'Office deleted successfully');
+        return redirect()->route('admin.offices.index')->with('success', 'Office deleted successfully');
     }
 }

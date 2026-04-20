@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import StaffLayout from './StaffLayout';
+import AnnouncementsList from '../../component/Announcements/AnnouncementList';
 import {
   Calendar,
   Clock,
@@ -56,7 +57,7 @@ function QuickActionButton({ title, icon: Icon, color, href, action }) {
   );
 }
 
-export default function Dashboard({ stats, auth }) {
+export default function Dashboard({ stats, auth, announcements = [] }) {
   return (
     <StaffLayout>
       <div className="space-y-8">
@@ -124,6 +125,13 @@ export default function Dashboard({ stats, auth }) {
             />
           </div>
         </div>
+         {/* System Announcements */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-3">System Announcements</h2>
+        <div className="bg-white rounded-lg shadow p-4">
+          <AnnouncementsList announcements={announcements} />
+        </div>
+      </div>
 
         {/* Recent Activity Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

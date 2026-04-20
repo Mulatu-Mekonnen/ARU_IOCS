@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Agenda;
 use App\Models\Office;
+use App\Models\Announcement;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
@@ -22,15 +23,21 @@ class HeadController extends Controller
 
         $stats = [
             'totalUsers' => User::where('office_id', $office->id)->count(),
-            'totalAgendas' => Agenda::where('office_id', $office->id)->count(),
-            'pendingAgendas' => Agenda::where('office_id', $office->id)->where('status', 'PENDING')->count(),
-            'approvedAgendas' => Agenda::where('office_id', $office->id)->where('status', 'APPROVED')->count(),
-            'rejectedAgendas' => Agenda::where('office_id', $office->id)->where('status', 'REJECTED')->count(),
-            'forwardedAgendas' => Agenda::where('office_id', $office->id)->where('status', 'FORWARDED')->count(),
+            'totalAgendas' => Agenda::where('current_office_id', $office->id)->count(),
+            'pendingAgendas' => Agenda::where('current_office_id', $office->id)->where('status', 'PENDING')->count(),
+            'approvedAgendas' => Agenda::where('current_office_id', $office->id)->where('status', 'APPROVED')->count(),
+            'rejectedAgendas' => Agenda::where('current_office_id', $office->id)->where('status', 'REJECTED')->count(),
+            'forwardedAgendas' => Agenda::where('current_office_id', $office->id)->where('status', 'FORWARDED')->count(),
         ];
+
+        $announcements = Announcement::with('author')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get();
 
         return Inertia::render('Dashboard/Head/Dashboard', [
             'stats' => $stats,
+            'announcements' => $announcements,
             'auth' => [
                 'user' => $request->user(),
             ],
@@ -42,7 +49,8 @@ class HeadController extends Controller
         $user = $request->user();
         $office = $user->office;
 
-        $query = Agenda::where('office_id', $office->id)->with(['user', 'office', 'approvals']);
+        $query = Agenda::where('current_office_id', $office->id)
+            ->with(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories']);
 
         // Status filter
         if ($request->has('status') && $request->status) {
@@ -62,9 +70,9 @@ class HeadController extends Controller
         $user = $request->user();
         $office = $user->office;
 
-        $agendas = Agenda::where('office_id', $office->id)
+        $agendas = Agenda::where('current_office_id', $office->id)
             ->where('status', 'PENDING')
-            ->with(['user', 'office', 'approvals'])
+            ->with(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories'])
             ->paginate(20);
 
         $offices = Office::all();
@@ -73,6 +81,67 @@ class HeadController extends Controller
             'agendas' => $agendas,
             'offices' => $offices,
         ]);
+    }
+
+    public function review(Request $request, Agenda $agenda)
+    {
+        $user = $request->user();
+        $office = $user->office;
+
+        if (!$office || $agenda->current_office_id !== $office->id) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'You are not allowed to review this agenda.'], 403);
+            }
+
+            return redirect()->back()->with('error', 'You are not allowed to review this agenda.');
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|in:approve,reject,forward',
+            'comment' => 'nullable|string|max:1000',
+            'receiver_office_id' => 'nullable|exists:offices,id',
+            'receiverOfficeId' => 'nullable|exists:offices,id',
+        ]);
+
+        $action = $validated['action'];
+        $receiverOfficeId = $validated['receiver_office_id'] ?? $validated['receiverOfficeId'] ?? null;
+
+        if ($action === 'forward' && !$receiverOfficeId) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Please select an office to forward to.'], 422);
+            }
+
+            return redirect()->back()->with('error', 'Please select an office to forward to.');
+        }
+
+        if ($action === 'approve') {
+            $agenda->update([
+                'status' => 'APPROVED',
+                'approved_by_id' => $user->id,
+            ]);
+        }
+
+        if ($action === 'reject') {
+            $agenda->update([
+                'status' => 'REJECTED',
+                'approved_by_id' => $user->id,
+            ]);
+        }
+
+        if ($action === 'forward') {
+            $agenda->update([
+                'status' => 'FORWARDED',
+                'receiver_office_id' => $receiverOfficeId,
+                'current_office_id' => $receiverOfficeId,
+                'approved_by_id' => $user->id,
+            ]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->back()->with('success', 'Agenda reviewed successfully.');
     }
 
     public function reports(Request $request)
@@ -84,7 +153,7 @@ class HeadController extends Controller
         $stats = [];
 
         foreach ($statuses as $status) {
-            $stats[strtolower($status)] = Agenda::where('office_id', $office->id)
+            $stats[strtolower($status)] = Agenda::where('current_office_id', $office->id)
                 ->where('status', $status)
                 ->count();
         }
@@ -92,7 +161,7 @@ class HeadController extends Controller
         $stats['total'] = array_sum($stats);
         $stats['archived'] = $stats['archived'] ?? 0;
 
-        $activityLogs = Agenda::where('office_id', $office->id)
+        $activityLogs = Agenda::where('current_office_id', $office->id)
             ->orderBy('updated_at', 'desc')
             ->take(10)
             ->get();
@@ -108,9 +177,9 @@ class HeadController extends Controller
         $user = $request->user();
         $office = $user->office;
 
-        $query = Agenda::where('office_id', $office->id)
+        $query = Agenda::where('current_office_id', $office->id)
             ->whereIn('status', ['APPROVED', 'REJECTED', 'FORWARDED', 'ARCHIVED'])
-            ->with(['user', 'office', 'approvals']);
+            ->with(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories']);
 
         // Status filter
         if ($request->has('status') && $request->status) {
@@ -123,7 +192,7 @@ class HeadController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($q) use ($search) {
+                    ->orWhereHas('createdBy', function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
                     });
             });

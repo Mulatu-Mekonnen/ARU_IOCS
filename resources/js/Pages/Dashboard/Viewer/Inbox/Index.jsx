@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import ViewerLayout from '../ViewerLayout';
 import { X } from 'lucide-react';

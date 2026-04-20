@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Agenda;
 use App\Models\Office;
+use App\Models\Announcement;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
@@ -21,15 +22,21 @@ class StaffController extends Controller
         $office = $user->office;
 
         $stats = [
-            'totalAgendas' => Agenda::where('user_id', $user->id)->count(),
-            'pendingAgendas' => Agenda::where('user_id', $user->id)->where('status', 'PENDING')->count(),
-            'approvedAgendas' => Agenda::where('user_id', $user->id)->where('status', 'APPROVED')->count(),
-            'rejectedAgendas' => Agenda::where('user_id', $user->id)->where('status', 'REJECTED')->count(),
-            'forwardedAgendas' => Agenda::where('user_id', $user->id)->where('status', 'FORWARDED')->count(),
+            'totalAgendas' => Agenda::where('created_by_id', $user->id)->count(),
+            'pendingAgendas' => Agenda::where('created_by_id', $user->id)->where('status', 'PENDING')->count(),
+            'approvedAgendas' => Agenda::where('created_by_id', $user->id)->where('status', 'APPROVED')->count(),
+            'rejectedAgendas' => Agenda::where('created_by_id', $user->id)->where('status', 'REJECTED')->count(),
+            'forwardedAgendas' => Agenda::where('created_by_id', $user->id)->where('status', 'FORWARDED')->count(),
         ];
+
+        $announcements = Announcement::with('author')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get();
 
         return Inertia::render('Dashboard/Staff/Dashboard', [
             'stats' => $stats,
+            'announcements' => $announcements,
             'auth' => [
                 'user' => $request->user(),
             ],
@@ -40,7 +47,8 @@ class StaffController extends Controller
     {
         $user = $request->user();
 
-        $query = Agenda::where('user_id', $user->id)->with(['user', 'office', 'approvals']);
+        $query = Agenda::where('created_by_id', $user->id)
+            ->with(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories']);
 
         // Status filter
         if ($request->has('status') && $request->status) {
@@ -63,7 +71,7 @@ class StaffController extends Controller
         // Agendas sent to this office (inbox)
         $agendas = Agenda::where('receiver_office_id', $office->id)
             ->orWhere('current_office_id', $office->id)
-            ->with(['user', 'office', 'approvals'])
+            ->with(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories'])
             ->paginate(20);
 
         return Inertia::render('Dashboard/Staff/Inbox/Index', [
@@ -76,8 +84,8 @@ class StaffController extends Controller
         $user = $request->user();
 
         // Agendas created by this user
-        $agendas = Agenda::where('user_id', $user->id)
-            ->with(['user', 'office', 'approvals'])
+        $agendas = Agenda::where('created_by_id', $user->id)
+            ->with(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories'])
             ->paginate(20);
 
         return Inertia::render('Dashboard/Staff/Sent/Index', [
@@ -91,12 +99,12 @@ class StaffController extends Controller
         $office = $user->office;
 
         $query = Agenda::where(function ($q) use ($user, $office) {
-            $q->where('user_id', $user->id)
+            $q->where('created_by_id', $user->id)
                 ->orWhere('receiver_office_id', $office->id)
                 ->orWhere('current_office_id', $office->id);
         })
         ->whereIn('status', ['APPROVED', 'REJECTED', 'FORWARDED', 'ARCHIVED'])
-        ->with(['user', 'office', 'approvals']);
+        ->with(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories']);
 
         // Status filter
         if ($request->has('status') && $request->status) {

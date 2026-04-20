@@ -45,11 +45,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/admin/reports', [ReportController::class, 'index'])->name('admin.reports.index');
     Route::get('/dashboard/admin/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs.index');
     Route::get('/dashboard/admin/notifications', [NotificationController::class, 'index'])->name('admin.notifications.index');
+    // API endpoint for frontend announcement components (Inertia/JS)
+    Route::get('/api/announcements', [AnnouncementController::class, 'apiIndex'])->name('api.announcements');
     Route::get('/dashboard/admin/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
     Route::post('/dashboard/admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
     Route::get('/dashboard/head', [HeadController::class, 'dashboard']);
     Route::get('/dashboard/head/agendas', [HeadController::class, 'agendas'])->name('head.agendas.index');
     Route::get('/dashboard/head/pending', [HeadController::class, 'pending'])->name('head.pending.index');
+    Route::patch('/dashboard/head/pending/{agenda}', [HeadController::class, 'review'])->name('head.pending.review');
     Route::get('/dashboard/head/reports', [HeadController::class, 'reports'])->name('head.reports.index');
     Route::get('/dashboard/head/archive', [HeadController::class, 'archive'])->name('head.archive.index');
     Route::get('/dashboard/head/notifications', [HeadController::class, 'notifications'])->name('head.notifications.index');

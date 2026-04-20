@@ -16,7 +16,7 @@ class AgendaController extends Controller
 
     public function index(Request $request)
     {
-        $query = Agenda::with(['user', 'office', 'approvals']);
+        $query = Agenda::with(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories']);
 
         // Search
         if ($request->has('search') && $request->search) {
@@ -29,7 +29,7 @@ class AgendaController extends Controller
 
         // Office filter
         if ($request->has('office') && $request->office) {
-            $query->where('office_id', $request->office);
+            $query->where('current_office_id', $request->office);
         }
 
         // Status filter
@@ -50,7 +50,7 @@ class AgendaController extends Controller
 
     public function show(Agenda $agenda)
     {
-        $agenda->load(['user', 'office', 'approvals.user']);
+        $agenda->load(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories.actionBy']);
 
         return Inertia::render('Dashboard/Admin/Agendas/Show', [
             'agenda' => $agenda,
@@ -74,12 +74,52 @@ class AgendaController extends Controller
             'receiver_office_id' => 'required|exists:offices,id',
         ]);
 
-        $validated['user_id'] = $request->user()->id;
-        $validated['office_id'] = $request->user()->office_id;
+        $validated['created_by_id'] = $request->user()->id;
+        $validated['sender_office_id'] = $request->user()->office_id;
+        $validated['current_office_id'] = $request->user()->office_id;
         $validated['status'] = 'PENDING';
 
         Agenda::create($validated);
 
         return redirect()->route('staff.agendas.create')->with('success', 'Agenda created successfully');
+    }
+
+    public function update(Request $request, Agenda $agenda)
+    {
+        $validated = $request->validate([
+            'action' => 'required|in:approve,reject,forward',
+            'receiver_office_id' => 'nullable|exists:offices,id',
+        ]);
+
+        $action = $validated['action'];
+
+        if ($action === 'forward' && empty($validated['receiver_office_id'])) {
+            return redirect()->back()->with('error', 'Please select a receiver office to forward.');
+        }
+
+        if ($action === 'approve') {
+            $agenda->update([
+                'status' => 'APPROVED',
+                'approved_by_id' => $request->user()->id,
+            ]);
+        }
+
+        if ($action === 'reject') {
+            $agenda->update([
+                'status' => 'REJECTED',
+                'approved_by_id' => $request->user()->id,
+            ]);
+        }
+
+        if ($action === 'forward') {
+            $agenda->update([
+                'status' => 'FORWARDED',
+                'receiver_office_id' => $validated['receiver_office_id'],
+                'current_office_id' => $validated['receiver_office_id'],
+                'approved_by_id' => $request->user()->id,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Agenda action completed successfully.');
     }
 }

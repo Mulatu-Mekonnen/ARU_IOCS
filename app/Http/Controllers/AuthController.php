@@ -39,10 +39,7 @@ class AuthController extends Controller
                 default => '/dashboard/staff',
             };
 
-            if ($request->header('X-Inertia')) {
-                return Inertia::location($dashboardUrl);
-            }
-
+            // Same-origin SPA redirect: use a normal redirect so Inertia follows with one visit (no 409 + full reload).
             return redirect()->intended($dashboardUrl);
         }
 

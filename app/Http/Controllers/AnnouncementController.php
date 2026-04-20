@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Announcement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class AnnouncementController extends Controller
@@ -15,7 +16,7 @@ class AnnouncementController extends Controller
 
     public function index(Request $request)
     {
-        $announcements = Announcement::with('user')
+        $announcements = Announcement::with('author')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -28,10 +29,11 @@ class AnnouncementController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'body' => 'required|string',
+            'content' => 'required|string',
         ]);
 
-        $validated['user_id'] = $request->user()->id;
+        $validated['id'] = (string) Str::uuid();
+        $validated['author_id'] = $request->user()->id;
 
         Announcement::create($validated);
 
@@ -42,7 +44,7 @@ class AnnouncementController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'body' => 'required|string',
+            'content' => 'required|string',
         ]);
 
         $announcement->update($validated);
@@ -55,5 +57,23 @@ class AnnouncementController extends Controller
         $announcement->delete();
 
         return redirect()->back()->with('success', 'Announcement deleted successfully');
+    }
+
+    public function apiIndex(Request $request)
+    {
+        $announcements = Announcement::with('author')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($announcement) {
+                return [
+                    'id' => $announcement->id,
+                    'title' => $announcement->title,
+                    'content' => $announcement->content,
+                    'createdAt' => $announcement->created_at->toISOString(),
+                    'author' => $announcement->author ? ['name' => $announcement->author->name] : null,
+                ];
+            });
+
+        return response()->json($announcements);
     }
 }

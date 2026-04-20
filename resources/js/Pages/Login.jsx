@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { Eye, EyeOff, User, Lock, Mail, Building2 } from 'lucide-react';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
+  const page = usePage();
+  const pageErrors = page.props.errors || {};
 
   const { data, setData, post, processing, errors } = useForm({
     email: '',
@@ -20,16 +23,29 @@ export default function Login() {
   ];
 
   const handleDemoLogin = (demoEmail, demoPassword) => {
-    setData('email', demoEmail);
-    setData('password', demoPassword);
-    setData('remember', true);
-    post('/login');
+    if (processing || demoBusy) return;
+    // useForm's post() reads `data` from the last render; multiple setData + immediate post() can send empty fields.
+    // Post an explicit payload so demo login always works on the first click.
+    setData({ email: demoEmail, password: demoPassword, remember: true });
+    setDemoBusy(true);
+    router.post('/login', {
+      email: demoEmail,
+      password: demoPassword,
+      remember: true,
+    }, {
+      preserveScroll: true,
+      onFinish: () => setDemoBusy(false),
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (processing || demoBusy) return;
     post('/login');
   };
+
+  const emailError = errors.email ?? pageErrors.email;
+  const emailErrorMessage = Array.isArray(emailError) ? emailError[0] : emailError;
 
   return (
     <div className="min-h-screen bg-gradient-to-br bg-yellow-25 flex items-center justify-center p-4 relative ">
@@ -71,13 +87,13 @@ export default function Login() {
           </div>
 
           {/* Error message */}
-          {errors.email && (
+          {emailErrorMessage && (
             <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded-r-lg text-red-700 text-sm">
               <div className="flex items-center">
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
-                {errors.email}
+                {emailErrorMessage}
               </div>
             </div>
           )}
@@ -161,10 +177,10 @@ export default function Login() {
             {/* Submit button with modern colors */}
             <button
               type="submit"
-              disabled={processing}
+              disabled={processing || demoBusy}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg"
             >
-              {processing ? (
+              {processing || demoBusy ? (
                 <div className="flex items-center justify-center">
                   <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -202,7 +218,7 @@ export default function Login() {
                   <button
                     key={account.role}
                     onClick={() => handleDemoLogin(account.email, account.password)}
-                    disabled={processing}
+                    disabled={processing || demoBusy}
                     className={`p-3 bg-gradient-to-r ${account.color} text-white rounded-lg hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-xs font-medium`}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >

@@ -212,7 +212,7 @@ export default function Index({ agendas: initialAgendas, filters }) {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {agenda.user?.name || "-"}
+                        {agenda.created_by?.name || "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(agenda.created_at).toLocaleDateString()}

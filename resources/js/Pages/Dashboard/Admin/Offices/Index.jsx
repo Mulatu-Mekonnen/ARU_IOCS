@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { useForm, router, usePage } from '@inertiajs/react';
 import AdminLayout from '../AdminLayout';
 import {
   Plus,
@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 
 export default function Index({ offices }) {
+  const page = usePage();
+  const flash = page.props.flash || {};
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -29,36 +31,63 @@ export default function Index({ offices }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editing) {
-      put(`/dashboard/admin/offices/${editing.id}`, {
-        onSuccess: () => {
-          setEditing(null);
-          setShowForm(false);
-          reset();
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    if (editing && editing.id && editing.id.length > 0) {
+      const url = '/dashboard/admin/offices/' + editing.id;
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
         },
+        body: JSON.stringify(data),
       });
+      
+      if (response.ok) {
+        window.location.reload();
+      }
     } else {
-      post('/dashboard/admin/offices', {
-        onSuccess: () => {
-          setShowForm(false);
-          reset();
+      const response = await fetch('/dashboard/admin/offices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
         },
+        body: JSON.stringify(data),
       });
+      
+      if (response.ok) {
+        window.location.reload();
+      }
     }
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {flash.success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+            <span className="block sm:inline">{flash.success}</span>
+          </div>
+        )}
+        {flash.error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <span className="block sm:inline">{flash.error}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Office Management</h1>
             <p className="text-gray-600 mt-1">Manage organizational offices and departments</p>
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditing(null);
+              setShowForm(true);
+            }}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -87,7 +116,12 @@ export default function Index({ offices }) {
                 {offices.map((o) => (
                   <tr key={o.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{o.name}</div>
+                      <div 
+                        className="font-medium text-gray-900 cursor-pointer hover:text-blue-600"
+                        onClick={() => handleEdit(o)}
+                      >
+                        {o.name}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2 text-gray-600">

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Agenda extends Model
 {
@@ -31,6 +32,17 @@ class Agenda extends Model
     protected $casts = [
         'attachment_size' => 'integer',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = Str::random(25);
+            }
+        });
+    }
 
     public function createdBy(): BelongsTo
     {

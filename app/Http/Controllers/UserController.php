@@ -51,6 +51,10 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'office_id' => $request->filled('office_id') ? $request->office_id : null,
+        ]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -70,6 +74,10 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        $request->merge([
+            'office_id' => $request->filled('office_id') ? $request->office_id : null,
+        ]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,

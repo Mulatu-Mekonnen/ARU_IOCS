@@ -22,15 +22,21 @@ class ViewerController extends Controller
         $office = $user->office;
 
         $stats = [
-            'totalAgendas' => Agenda::where('office_id', $office->id)->count(),
-            'pendingAgendas' => Agenda::where('office_id', $office->id)->where('status', 'PENDING')->count(),
-            'approvedAgendas' => Agenda::where('office_id', $office->id)->where('status', 'APPROVED')->count(),
-            'rejectedAgendas' => Agenda::where('office_id', $office->id)->where('status', 'REJECTED')->count(),
-            'forwardedAgendas' => Agenda::where('office_id', $office->id)->where('status', 'FORWARDED')->count(),
+            'totalAgendas' => Agenda::where('current_office_id', $office->id)->count(),
+            'pendingAgendas' => Agenda::where('current_office_id', $office->id)->where('status', 'PENDING')->count(),
+            'approvedAgendas' => Agenda::where('current_office_id', $office->id)->where('status', 'APPROVED')->count(),
+            'rejectedAgendas' => Agenda::where('current_office_id', $office->id)->where('status', 'REJECTED')->count(),
+            'forwardedAgendas' => Agenda::where('current_office_id', $office->id)->where('status', 'FORWARDED')->count(),
         ];
+
+        $announcements = Announcement::with('author')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get();
 
         return Inertia::render('Dashboard/Viewer/Dashboard', [
             'stats' => $stats,
+            'announcements' => $announcements,
             'auth' => [
                 'user' => $request->user(),
             ],
@@ -42,7 +48,7 @@ class ViewerController extends Controller
         $user = $request->user();
         $office = $user->office;
 
-        $agendas = Agenda::where('office_id', $office->id)
+        $agendas = Agenda::where('current_office_id', $office->id)
             ->where('status', 'APPROVED')
             ->with(['createdBy', 'senderOffice', 'receiverOffice'])
             ->orderBy('created_at', 'desc')
@@ -61,7 +67,7 @@ class ViewerController extends Controller
         $user = $request->user();
         $office = $user->office;
 
-        $agendas = Agenda::where('office_id', $office->id)
+        $agendas = Agenda::where('current_office_id', $office->id)
             ->where('status', 'ARCHIVED')
             ->with(['createdBy'])
             ->orderBy('created_at', 'desc')

@@ -1,9 +1,11 @@
 import './bootstrap';
 import '../css/app.css';
+import './Pages/global.css';
 
 import React from 'react';
 import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
+import RootLayout from './Pages/layout';
 
 createInertiaApp({
     resolve: name => {
@@ -11,6 +13,10 @@ createInertiaApp({
         return pages[`./Pages/${name}.jsx`];
     },
     setup({ el, App, props }) {
-        createRoot(el).render(<App {...props} />);
+        createRoot(el).render(
+            <RootLayout>
+                <App {...props} />
+            </RootLayout>
+        );
     },
 });

@@ -94,6 +94,7 @@ php artisan key:generate
 
 ```bash
 php artisan migrate
+php artisan db:seed
 ```
 
 If you want to reset and re-run all migrations:

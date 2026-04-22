@@ -6,6 +6,7 @@ use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use App\Support\AuditLogger;
 
 class AnnouncementController extends Controller
 {
@@ -35,7 +36,10 @@ class AnnouncementController extends Controller
         $validated['id'] = (string) Str::uuid();
         $validated['author_id'] = $request->user()->id;
 
-        Announcement::create($validated);
+        $announcement = Announcement::create($validated);
+        AuditLogger::log($request->user(), 'Created Announcement', 'Announcements', 'Created announcement "' . $announcement->title . '"', [
+            'announcement_id' => $announcement->id,
+        ]);
 
         return redirect()->back()->with('success', 'Announcement created successfully');
     }
@@ -48,13 +52,21 @@ class AnnouncementController extends Controller
         ]);
 
         $announcement->update($validated);
+        AuditLogger::log($request->user(), 'Updated Announcement', 'Announcements', 'Updated announcement "' . $announcement->title . '"', [
+            'announcement_id' => $announcement->id,
+        ]);
 
         return redirect()->back()->with('success', 'Announcement updated successfully');
     }
 
     public function destroy(Announcement $announcement)
     {
+        $title = $announcement->title;
+        $id = $announcement->id;
         $announcement->delete();
+        AuditLogger::log(request()->user(), 'Deleted Announcement', 'Announcements', 'Deleted announcement "' . $title . '"', [
+            'announcement_id' => $id,
+        ]);
 
         return redirect()->back()->with('success', 'Announcement deleted successfully');
     }

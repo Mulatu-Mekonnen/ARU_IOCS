@@ -1,5 +1,6 @@
 import React from 'react';
 import { useState, useMemo } from 'react';
+import { router } from '@inertiajs/react';
 import HeadLayout from '../HeadLayout';
 import {
   Bell,
@@ -76,6 +77,7 @@ export default function Index({ notifications: initialNotifications, stats: init
   }
 
   function markAsRead(id) {
+    router.post('/dashboard/notifications/read', { notification_id: id }, { preserveScroll: true });
     setNotifications(prev =>
       prev.map(notif =>
         notif.id === id ? { ...notif, read: true } : notif
@@ -84,6 +86,9 @@ export default function Index({ notifications: initialNotifications, stats: init
   }
 
   function markAllAsRead() {
+    router.post('/dashboard/notifications/read-all', {
+      notification_ids: notifications.map((n) => n.id),
+    }, { preserveScroll: true });
     setNotifications(prev =>
       prev.map(notif => ({ ...notif, read: true }))
     );

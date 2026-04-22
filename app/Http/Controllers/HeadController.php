@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Agenda;
+use App\Models\ApprovalHistory;
 use App\Models\Office;
 use App\Models\Announcement;
+use App\Models\AuditLog;
+use App\Models\NotificationRead;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use App\Support\AuditLogger;
 
 class HeadController extends Controller
 {
@@ -35,9 +40,24 @@ class HeadController extends Controller
             ->limit(10)
             ->get();
 
+        $recentActivities = AuditLog::where('user_role', 'HEAD')
+            ->orWhere('details', 'like', '%' . ($office?->name ?? '') . '%')
+            ->latest('created_at')
+            ->take(8)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'action' => $log->action,
+                    'details' => $log->details,
+                    'timestamp' => optional($log->created_at)->toIso8601String(),
+                ];
+            });
+
         return Inertia::render('Dashboard/Head/Dashboard', [
             'stats' => $stats,
             'announcements' => $announcements,
+            'recentActivities' => $recentActivities,
             'auth' => [
                 'user' => $request->user(),
             ],
@@ -98,7 +118,7 @@ class HeadController extends Controller
 
         $validated = $request->validate([
             'action' => 'required|in:approve,reject,forward',
-            'comment' => 'nullable|string|max:1000',
+            'comment' => 'nullable|string|max:1000|required_if:action,reject',
             'receiver_office_id' => 'nullable|exists:offices,id',
             'receiverOfficeId' => 'nullable|exists:offices,id',
         ]);
@@ -119,6 +139,16 @@ class HeadController extends Controller
                 'status' => 'APPROVED',
                 'approved_by_id' => $user->id,
             ]);
+            ApprovalHistory::create([
+                'id' => Str::random(25),
+                'agenda_id' => $agenda->id,
+                'action' => 'APPROVED',
+                'comment' => $validated['comment'] ?? null,
+                'action_by_id' => $user->id,
+            ]);
+            AuditLogger::log($user, 'Approved Communication', 'Approval', 'Head approved "' . $agenda->title . '"', [
+                'agenda_id' => $agenda->id,
+            ]);
         }
 
         if ($action === 'reject') {
@@ -126,14 +156,36 @@ class HeadController extends Controller
                 'status' => 'REJECTED',
                 'approved_by_id' => $user->id,
             ]);
+            ApprovalHistory::create([
+                'id' => Str::random(25),
+                'agenda_id' => $agenda->id,
+                'action' => 'REJECTED',
+                'comment' => $validated['comment'] ?? null,
+                'action_by_id' => $user->id,
+            ]);
+            AuditLogger::log($user, 'Rejected Communication', 'Approval', 'Head rejected "' . $agenda->title . '"', [
+                'agenda_id' => $agenda->id,
+                'reason' => $validated['comment'] ?? null,
+            ]);
         }
 
         if ($action === 'forward') {
             $agenda->update([
-                'status' => 'FORWARDED',
+                'status' => 'PENDING',
                 'receiver_office_id' => $receiverOfficeId,
                 'current_office_id' => $receiverOfficeId,
                 'approved_by_id' => $user->id,
+            ]);
+            ApprovalHistory::create([
+                'id' => Str::random(25),
+                'agenda_id' => $agenda->id,
+                'action' => 'FORWARDED',
+                'comment' => $validated['comment'] ?? null,
+                'action_by_id' => $user->id,
+            ]);
+            AuditLogger::log($user, 'Forwarded Communication', 'Approval', 'Head forwarded "' . $agenda->title . '"', [
+                'agenda_id' => $agenda->id,
+                'receiver_office_id' => $receiverOfficeId,
             ]);
         }
 
@@ -219,53 +271,61 @@ class HeadController extends Controller
         $user = $request->user();
         $office = $user->office;
 
-        // Create mock notifications
-        $notifications = [
-            [
-                'id' => '1',
-                'type' => 'new_communication',
-                'title' => 'New Communication Received',
-                'message' => 'A new agenda item has been submitted from the Finance Office requiring your review.',
-                'timestamp' => now()->subHours(2)->toIso8601String(),
-                'priority' => 'high',
-                'read' => false,
-                'actionUrl' => '/dashboard/head/pending',
-                'metadata' => ['comment' => null]
-            ],
-            [
-                'id' => '2',
-                'type' => 'pending_reminder',
-                'title' => 'Pending Approvals Reminder',
-                'message' => 'You have 3 pending communications awaiting your approval.',
-                'timestamp' => now()->subHours(4)->toIso8601String(),
-                'priority' => 'medium',
-                'read' => false,
-                'actionUrl' => '/dashboard/head/pending',
-                'metadata' => ['comment' => null]
-            ],
-            [
-                'id' => '3',
-                'type' => 'approval_update',
-                'title' => 'Communication Approved',
-                'message' => 'Your approval of "Q4 Budget Review" has been recorded and forwarded to the admin office.',
-                'timestamp' => now()->subDays(1)->toIso8601String(),
-                'priority' => 'low',
-                'read' => true,
-                'actionUrl' => '/dashboard/head/archive',
-                'metadata' => ['comment' => null]
-            ],
-            [
-                'id' => '4',
-                'type' => 'forwarded_communication',
-                'title' => 'Communication Forwarded',
-                'message' => 'The "Annual Report Submission" has been forwarded to the Board Office for final review.',
-                'timestamp' => now()->subDays(2)->toIso8601String(),
-                'priority' => 'medium',
-                'read' => true,
-                'actionUrl' => '/dashboard/head/archive',
-                'metadata' => ['comment' => null]
-            ],
-        ];
+        $notifications = Agenda::with(['createdBy', 'senderOffice'])
+            ->where('current_office_id', $office->id)
+            ->latest('updated_at')
+            ->take(30)
+            ->get()
+            ->map(function ($agenda) {
+                $type = 'new_communication';
+                $title = 'New Communication Received';
+                $priority = 'high';
+                $actionUrl = '/dashboard/head/pending';
+
+                if ($agenda->status === 'APPROVED') {
+                    $type = 'communication_approved';
+                    $title = 'Communication Approved';
+                    $priority = 'low';
+                    $actionUrl = '/dashboard/head/archive';
+                } elseif ($agenda->status === 'REJECTED') {
+                    $type = 'communication_rejected';
+                    $title = 'Communication Rejected';
+                    $priority = 'high';
+                    $actionUrl = '/dashboard/head/archive';
+                } elseif ($agenda->status === 'FORWARDED') {
+                    $type = 'communication_forwarded';
+                    $title = 'Communication Forwarded';
+                    $priority = 'medium';
+                    $actionUrl = '/dashboard/head/archive';
+                }
+
+                return [
+                    'id' => 'head-agenda-' . $agenda->id,
+                    'type' => $type,
+                    'title' => $title,
+                    'message' => sprintf(
+                        '%s from %s',
+                        $agenda->title,
+                        $agenda->senderOffice?->name ?? ($agenda->createdBy?->name ?? 'Unknown sender')
+                    ),
+                    'timestamp' => optional($agenda->updated_at ?? $agenda->created_at)?->toIso8601String(),
+                    'priority' => $priority,
+                    'read' => false,
+                    'actionUrl' => $actionUrl,
+                    'metadata' => ['comment' => null],
+                ];
+            })
+            ->values()
+            ->all();
+
+        $readIds = NotificationRead::where('user_id', $user->id)
+            ->pluck('notification_id')
+            ->all();
+
+        $notifications = collect($notifications)->map(function ($n) use ($readIds) {
+            $n['read'] = in_array($n['id'], $readIds, true);
+            return $n;
+        })->all();
 
         $stats = [
             'total' => count($notifications),

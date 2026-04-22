@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class ApprovalHistory extends Model
 {
@@ -15,6 +16,7 @@ class ApprovalHistory extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'id',
         'agenda_id',
         'action',
         'comment',
@@ -24,6 +26,17 @@ class ApprovalHistory extends Model
     protected $casts = [
         'created_at' => 'datetime',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = Str::random(25);
+            }
+        });
+    }
 
     public function agenda(): BelongsTo
     {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Support\AuditLogger;
 
 class SettingsController extends Controller
 {
@@ -55,6 +56,7 @@ class SettingsController extends Controller
 
         // Store settings in cache or database
         // For now, we'll just return them
+        AuditLogger::log($request->user(), 'Updated Settings', 'System Settings', 'Updated system settings');
         return redirect()->back()->with('success', 'Settings updated successfully');
     }
 }

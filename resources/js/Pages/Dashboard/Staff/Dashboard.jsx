@@ -57,7 +57,7 @@ function QuickActionButton({ title, icon: Icon, color, href, action }) {
   );
 }
 
-export default function Dashboard({ stats, auth, announcements = [] }) {
+export default function Dashboard({ stats, auth, announcements = [], recentActivities = [] }) {
   return (
     <StaffLayout>
       <div className="space-y-8">
@@ -137,10 +137,22 @@ export default function Dashboard({ stats, auth, announcements = [] }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h2>
           <div className="space-y-4">
-            <div className="text-center py-8 text-gray-500">
-              <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Recent activities will be displayed here</p>
-            </div>
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity) => (
+                <div key={activity.id} className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-gray-900">{activity.action}</p>
+                    <p className="text-xs text-gray-500">{new Date(activity.timestamp).toLocaleString()}</p>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">{activity.details}</p>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No recent activity yet.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

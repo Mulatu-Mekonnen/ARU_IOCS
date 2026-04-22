@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Office;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Support\AuditLogger;
 
 class OfficeController extends Controller
 {
@@ -28,7 +29,10 @@ class OfficeController extends Controller
             'name' => 'required|string|max:255|unique:offices,name',
         ]);
 
-        Office::create($validated);
+        $office = Office::create($validated);
+        AuditLogger::log($request->user(), 'Created Office', 'Office Management', 'Created office "' . $office->name . '"', [
+            'office_id' => $office->id,
+        ]);
 
         return redirect()->route('admin.offices.index')->with('success', 'Office created successfully');
     }
@@ -40,13 +44,21 @@ class OfficeController extends Controller
         ]);
 
         $office->update($validated);
+        AuditLogger::log($request->user(), 'Updated Office', 'Office Management', 'Updated office "' . $office->name . '"', [
+            'office_id' => $office->id,
+        ]);
 
         return redirect()->route('admin.offices.index')->with('success', 'Office updated successfully');
     }
 
     public function destroy(Office $office)
     {
+        $name = $office->name;
+        $id = $office->id;
         $office->delete();
+        AuditLogger::log(request()->user(), 'Deleted Office', 'Office Management', 'Deleted office "' . $name . '"', [
+            'office_id' => $id,
+        ]);
 
         return redirect()->route('admin.offices.index')->with('success', 'Office deleted successfully');
     }

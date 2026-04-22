@@ -7,6 +7,7 @@ use App\Models\Office;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
+use App\Support\AuditLogger;
 
 class UserController extends Controller
 {
@@ -68,6 +69,9 @@ class UserController extends Controller
         $validated['active'] = $validated['active'] ?? true;
 
         $user = User::create($validated);
+        AuditLogger::log($request->user(), 'Created User', 'User Management', 'Created user ' . $user->email, [
+            'target_user_id' => $user->id,
+        ]);
 
         return redirect()->back()->with('success', 'User created successfully');
     }
@@ -94,13 +98,21 @@ class UserController extends Controller
         }
 
         $user->update($validated);
+        AuditLogger::log($request->user(), 'Updated User', 'User Management', 'Updated user ' . $user->email, [
+            'target_user_id' => $user->id,
+        ]);
 
         return redirect()->back()->with('success', 'User updated successfully');
     }
 
     public function destroy(User $user)
     {
+        $email = $user->email;
+        $id = $user->id;
         $user->delete();
+        AuditLogger::log(request()->user(), 'Deleted User', 'User Management', 'Deleted user ' . $email, [
+            'target_user_id' => $id,
+        ]);
 
         return redirect()->back()->with('success', 'User deleted successfully');
     }

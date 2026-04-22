@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Agenda;
+use App\Models\ApprovalHistory;
 use App\Models\Office;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
+use App\Support\AuditLogger;
 
 class AgendaController extends Controller
 {
@@ -76,10 +79,14 @@ class AgendaController extends Controller
 
         $validated['created_by_id'] = $request->user()->id;
         $validated['sender_office_id'] = $request->user()->office_id;
-        $validated['current_office_id'] = $request->user()->office_id;
+        $validated['current_office_id'] = $validated['receiver_office_id'];
         $validated['status'] = 'PENDING';
 
-        Agenda::create($validated);
+        $agenda = Agenda::create($validated);
+        AuditLogger::log($request->user(), 'Created Communication', 'Communications', 'Created communication "' . $agenda->title . '"', [
+            'agenda_id' => $agenda->id,
+            'receiver_office_id' => $agenda->receiver_office_id,
+        ]);
 
         return redirect()->route('staff.agendas.create')->with('success', 'Agenda created successfully');
     }
@@ -88,6 +95,7 @@ class AgendaController extends Controller
     {
         $validated = $request->validate([
             'action' => 'required|in:approve,reject,forward',
+            'comment' => 'nullable|string|max:1000|required_if:action,reject',
             'receiver_office_id' => 'nullable|exists:offices,id',
         ]);
 
@@ -102,6 +110,16 @@ class AgendaController extends Controller
                 'status' => 'APPROVED',
                 'approved_by_id' => $request->user()->id,
             ]);
+            ApprovalHistory::create([
+                'id' => Str::random(25),
+                'agenda_id' => $agenda->id,
+                'action' => 'APPROVED',
+                'comment' => $validated['comment'] ?? null,
+                'action_by_id' => $request->user()->id,
+            ]);
+            AuditLogger::log($request->user(), 'Approved Communication', 'Approval', 'Approved communication "' . $agenda->title . '"', [
+                'agenda_id' => $agenda->id,
+            ]);
         }
 
         if ($action === 'reject') {
@@ -109,14 +127,36 @@ class AgendaController extends Controller
                 'status' => 'REJECTED',
                 'approved_by_id' => $request->user()->id,
             ]);
+            ApprovalHistory::create([
+                'id' => Str::random(25),
+                'agenda_id' => $agenda->id,
+                'action' => 'REJECTED',
+                'comment' => $validated['comment'] ?? null,
+                'action_by_id' => $request->user()->id,
+            ]);
+            AuditLogger::log($request->user(), 'Rejected Communication', 'Approval', 'Rejected communication "' . $agenda->title . '"', [
+                'agenda_id' => $agenda->id,
+                'reason' => $validated['comment'] ?? null,
+            ]);
         }
 
         if ($action === 'forward') {
             $agenda->update([
-                'status' => 'FORWARDED',
+                'status' => 'PENDING',
                 'receiver_office_id' => $validated['receiver_office_id'],
                 'current_office_id' => $validated['receiver_office_id'],
                 'approved_by_id' => $request->user()->id,
+            ]);
+            ApprovalHistory::create([
+                'id' => Str::random(25),
+                'agenda_id' => $agenda->id,
+                'action' => 'FORWARDED',
+                'comment' => $validated['comment'] ?? null,
+                'action_by_id' => $request->user()->id,
+            ]);
+            AuditLogger::log($request->user(), 'Forwarded Communication', 'Approval', 'Forwarded communication "' . $agenda->title . '"', [
+                'agenda_id' => $agenda->id,
+                'receiver_office_id' => $validated['receiver_office_id'],
             ]);
         }
 

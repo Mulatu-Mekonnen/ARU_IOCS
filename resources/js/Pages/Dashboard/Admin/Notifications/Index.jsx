@@ -1,5 +1,6 @@
 import React from 'react';
 import { useState, useMemo } from 'react';
+import { router } from '@inertiajs/react';
 import AdminLayout from '../AdminLayout';
 import {
   Bell,
@@ -18,7 +19,7 @@ import {
 export default function Index({ notifications: initialNotifications }) {
   const [notifications, setNotifications] = useState(initialNotifications.map(n => ({
     ...n,
-    read: false
+    read: n.read || false
   })));
 
   const stats = useMemo(() => {
@@ -76,6 +77,7 @@ export default function Index({ notifications: initialNotifications }) {
   }
 
   function markAsRead(id) {
+    router.post('/dashboard/notifications/read', { notification_id: id }, { preserveScroll: true });
     setNotifications(prev =>
       prev.map(notif =>
         notif.id === id ? { ...notif, read: true } : notif
@@ -84,6 +86,9 @@ export default function Index({ notifications: initialNotifications }) {
   }
 
   function markAllAsRead() {
+    router.post('/dashboard/notifications/read-all', {
+      notification_ids: notifications.map((n) => n.id),
+    }, { preserveScroll: true });
     setNotifications(prev =>
       prev.map(notif => ({ ...notif, read: true }))
     );

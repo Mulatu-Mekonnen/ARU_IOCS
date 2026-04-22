@@ -45,6 +45,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/admin/reports', [ReportController::class, 'index'])->name('admin.reports.index');
     Route::get('/dashboard/admin/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs.index');
     Route::get('/dashboard/admin/notifications', [NotificationController::class, 'index'])->name('admin.notifications.index');
+    Route::post('/dashboard/notifications/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/dashboard/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
     // API endpoint for frontend announcement components (Inertia/JS)
     Route::get('/api/announcements', [AnnouncementController::class, 'apiIndex'])->name('api.announcements');
     Route::get('/dashboard/admin/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
@@ -68,4 +70,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/viewer/inbox', [ViewerController::class, 'inbox'])->name('viewer.inbox.index');
     Route::get('/dashboard/viewer/archive', [ViewerController::class, 'archive'])->name('viewer.archive.index');
     Route::get('/dashboard/viewer/announcements', [ViewerController::class, 'announcements'])->name('viewer.announcements.index');
+    Route::get('/dashboard/viewer/notifications', [ViewerController::class, 'notifications'])->name('viewer.notifications.index');
 });

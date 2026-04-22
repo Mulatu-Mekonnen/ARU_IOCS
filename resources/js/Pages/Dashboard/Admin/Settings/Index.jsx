@@ -18,7 +18,7 @@ export default function Index({ settings: initialSettings }) {
 
   const saveSettings = () => {
     setSaving(true);
-    router.put('/dashboard/admin/settings', settings, {
+    router.post('/dashboard/admin/settings', settings, {
       onSuccess: () => setSaving(false),
       onError: () => setSaving(false),
     });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import HeadLayout from '../HeadLayout';
 import {
   Search,
@@ -16,6 +16,7 @@ import {
 export default function Index({ agendas, filters }) {
   const [statusFilter, setStatusFilter] = useState(filters.status || "");
   const [currentPage, setCurrentPage] = useState(agendas.current_page);
+  const [selectedAgenda, setSelectedAgenda] = useState(null);
 
   const handleSearch = () => {
     router.get('/dashboard/head/agendas', {
@@ -114,13 +115,13 @@ export default function Index({ agendas, filters }) {
                       {new Date(agenda.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link
-                        href={`/dashboard/admin/agendas/${agenda.id}`}
+                      <button
+                        onClick={() => setSelectedAgenda(agenda)}
                         className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
                         title="View Details"
                       >
                         <Eye className="w-4 h-4" />
-                      </Link>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -164,6 +165,37 @@ export default function Index({ agendas, filters }) {
           )}
         </div>
       </div>
+      {selectedAgenda && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Agenda Details</h3>
+              <button onClick={() => setSelectedAgenda(null)} className="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div><span className="text-gray-500">Title:</span> <span className="font-medium text-gray-900">{selectedAgenda.title || '-'}</span></div>
+              <div><span className="text-gray-500">From:</span> <span className="font-medium text-gray-900">{selectedAgenda.created_by?.name || selectedAgenda.sender_office?.name || '-'}</span></div>
+              <div><span className="text-gray-500">Status:</span> <span className="font-medium text-gray-900">{selectedAgenda.status || '-'}</span></div>
+              <div><span className="text-gray-500">Date:</span> <span className="font-medium text-gray-900">{selectedAgenda.created_at ? new Date(selectedAgenda.created_at).toLocaleString() : '-'}</span></div>
+              <div>
+                <span className="text-gray-500">Description:</span>
+                <p className="mt-1 text-gray-900 whitespace-pre-wrap">{selectedAgenda.description || '-'}</p>
+              </div>
+              <div>
+                <span className="text-gray-500">Attachment:</span>{' '}
+                {selectedAgenda.attachment_url ? (
+                  <a href={selectedAgenda.attachment_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Open attachment</a>
+                ) : (
+                  <span className="font-medium text-gray-900">-</span>
+                )}
+              </div>
+            </div>
+            <div className="mt-6 text-right">
+              <button onClick={() => setSelectedAgenda(null)} className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-700">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </HeadLayout>
   );
 }

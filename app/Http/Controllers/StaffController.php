@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\Agenda;
 use App\Models\Office;
 use App\Models\Announcement;
+use App\Models\AuditLog;
+use App\Models\NotificationRead;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
@@ -34,9 +36,23 @@ class StaffController extends Controller
             ->limit(10)
             ->get();
 
+        $recentActivities = AuditLog::where('user_id', $user->id)
+            ->latest('created_at')
+            ->take(8)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'action' => $log->action,
+                    'details' => $log->details,
+                    'timestamp' => optional($log->created_at)->toIso8601String(),
+                ];
+            });
+
         return Inertia::render('Dashboard/Staff/Dashboard', [
             'stats' => $stats,
             'announcements' => $announcements,
+            'recentActivities' => $recentActivities,
             'auth' => [
                 'user' => $request->user(),
             ],
@@ -139,43 +155,73 @@ class StaffController extends Controller
     public function notifications(Request $request)
     {
         $user = $request->user();
+        $office = $user->office;
 
-        // Create mock notifications
-        $notifications = [
-            [
-                'id' => '1',
-                'type' => 'new_communication',
-                'title' => 'New Communication Received',
-                'message' => 'A communication requires your review or action.',
-                'timestamp' => now()->subHours(2)->toIso8601String(),
-                'priority' => 'high',
-                'read' => false,
-                'actionUrl' => '/dashboard/staff/inbox',
-                'metadata' => ['comment' => null]
-            ],
-            [
-                'id' => '2',
-                'type' => 'approval_update',
-                'title' => 'Communication Status Updated',
-                'message' => 'Your communication has been approved and is ready for review.',
-                'timestamp' => now()->subHours(4)->toIso8601String(),
-                'priority' => 'medium',
-                'read' => false,
-                'actionUrl' => '/dashboard/staff/sent',
-                'metadata' => ['comment' => null]
-            ],
-            [
-                'id' => '3',
-                'type' => 'pending_reminder',
-                'title' => 'Pending Communications Reminder',
-                'message' => 'You have pending communications that need attention.',
-                'timestamp' => now()->subDays(1)->toIso8601String(),
-                'priority' => 'medium',
-                'read' => true,
-                'actionUrl' => '/dashboard/staff/agendas',
-                'metadata' => ['comment' => null]
-            ],
-        ];
+        $createdNotifications = Agenda::with('receiverOffice')
+            ->where('created_by_id', $user->id)
+            ->latest('updated_at')
+            ->take(15)
+            ->get()
+            ->map(function ($agenda) {
+                return [
+                    'id' => 'staff-created-' . $agenda->id,
+                    'type' => 'approval_update',
+                    'title' => 'Communication Status Updated',
+                    'message' => sprintf(
+                        '%s - %s%s',
+                        $agenda->title,
+                        $agenda->status,
+                        $agenda->receiverOffice?->name ? ' to ' . $agenda->receiverOffice->name : ''
+                    ),
+                    'timestamp' => optional($agenda->updated_at ?? $agenda->created_at)?->toIso8601String(),
+                    'priority' => $agenda->status === 'REJECTED' ? 'high' : 'medium',
+                    'read' => false,
+                    'actionUrl' => '/dashboard/staff/sent',
+                    'metadata' => ['comment' => null],
+                ];
+            });
+
+        $inboxNotifications = Agenda::with(['createdBy', 'senderOffice'])
+            ->where(function ($q) use ($office) {
+                $q->where('receiver_office_id', $office->id)
+                    ->orWhere('current_office_id', $office->id);
+            })
+            ->latest('updated_at')
+            ->take(15)
+            ->get()
+            ->map(function ($agenda) {
+                return [
+                    'id' => 'staff-inbox-' . $agenda->id,
+                    'type' => 'new_communication',
+                    'title' => 'New Communication Received',
+                    'message' => sprintf(
+                        '%s from %s',
+                        $agenda->title,
+                        $agenda->senderOffice?->name ?? ($agenda->createdBy?->name ?? 'Unknown sender')
+                    ),
+                    'timestamp' => optional($agenda->updated_at ?? $agenda->created_at)?->toIso8601String(),
+                    'priority' => $agenda->status === 'PENDING' ? 'high' : 'medium',
+                    'read' => false,
+                    'actionUrl' => '/dashboard/staff/inbox',
+                    'metadata' => ['comment' => null],
+                ];
+            });
+
+        $notifications = $createdNotifications
+            ->concat($inboxNotifications)
+            ->sortByDesc('timestamp')
+            ->take(30)
+            ->values()
+            ->all();
+
+        $readIds = NotificationRead::where('user_id', $user->id)
+            ->pluck('notification_id')
+            ->all();
+
+        $notifications = collect($notifications)->map(function ($n) use ($readIds) {
+            $n['read'] = in_array($n['id'], $readIds, true);
+            return $n;
+        })->all();
 
         $stats = [
             'total' => count($notifications),

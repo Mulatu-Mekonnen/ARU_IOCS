@@ -32,8 +32,8 @@ class UserSeeder extends Seeder
         User::create([
             'id' => Str::uuid(),
             'name' => 'Head User',
-            'email' => 'muler@g',
-            'password' => Hash::make('1234'),
+            'email' => 'head@office.com',
+            'password' => Hash::make('head1234'),
             'role' => 'HEAD',
             'active' => true,
             'office_id' => $offices->where('name', 'President Office')->first()->id,
@@ -44,7 +44,7 @@ class UserSeeder extends Seeder
             'id' => Str::uuid(),
             'name' => 'Staff User',
             'email' => 'staff@office.com',
-            'password' => Hash::make('user123'),
+            'password' => Hash::make('user1234'),
             'role' => 'STAFF',
             'active' => true,
             'office_id' => $offices->where('name', 'Academic Affairs')->first()->id,
@@ -54,7 +54,7 @@ class UserSeeder extends Seeder
         User::create([
             'id' => Str::uuid(),
             'name' => 'Viewer User',
-            'email' => 'namste@G',
+            'email' => 'namste@office.com',
             'password' => Hash::make('1234'),
             'role' => 'VIEWER',
             'active' => true,

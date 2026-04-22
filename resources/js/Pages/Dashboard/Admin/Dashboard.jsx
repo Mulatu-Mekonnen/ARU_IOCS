@@ -14,7 +14,7 @@ import {
   Settings
 } from "lucide-react";
 
-export default function Dashboard({ stats }) {
+export default function Dashboard({ stats, agendaByStatus = {}, agendaByOffice = [], recentActivities = [] }) {
   return (
     <AdminLayout>
       <div className="space-y-8">
@@ -130,13 +130,33 @@ export default function Dashboard({ stats }) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Agendas by Status</h2>
             <div className="space-y-4">
-              {/* Placeholder data */}
               <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                   <span className="font-medium text-gray-900">Pending</span>
                 </div>
-                <span className="text-lg font-semibold text-gray-700">{stats.pendingAgendas || 0}</span>
+                <span className="text-lg font-semibold text-gray-700">{agendaByStatus.PENDING || 0}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="font-medium text-gray-900">Approved</span>
+                </div>
+                <span className="text-lg font-semibold text-gray-700">{agendaByStatus.APPROVED || 0}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span className="font-medium text-gray-900">Rejected</span>
+                </div>
+                <span className="text-lg font-semibold text-gray-700">{agendaByStatus.REJECTED || 0}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span className="font-medium text-gray-900">Forwarded</span>
+                </div>
+                <span className="text-lg font-semibold text-gray-700">{agendaByStatus.FORWARDED || 0}</span>
               </div>
             </div>
           </div>
@@ -144,11 +164,19 @@ export default function Dashboard({ stats }) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Agendas by Office</h2>
             <div className="space-y-4">
-              {/* Placeholder */}
-              <div className="text-center py-8 text-gray-500">
-                <Building className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Office statistics will be displayed here</p>
-              </div>
+              {agendaByOffice.length > 0 ? (
+                agendaByOffice.map((row) => (
+                  <div key={row.name} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <span className="font-medium text-gray-900">{row.name}</span>
+                    <span className="text-lg font-semibold text-gray-700">{row.count}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Building className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No office activity yet.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -157,10 +185,23 @@ export default function Dashboard({ stats }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h2>
           <div className="space-y-4">
-            <div className="text-center py-8 text-gray-500">
-              <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Recent activities will be displayed here</p>
-            </div>
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity) => (
+                <div key={activity.id} className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-gray-900">{activity.action}</p>
+                    <p className="text-xs text-gray-500">{new Date(activity.timestamp).toLocaleString()}</p>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">{activity.details}</p>
+                  <p className="text-xs text-gray-500 mt-1">By {activity.actor}</p>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No recent activity yet.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -48,7 +48,7 @@ function StatCard({ title, value, icon: Icon, href, color }) {
   );
 }
 
-export default function Dashboard({ stats, auth, announcements = [], recentActivities = [] }) {
+export default function Dashboard({ stats, auth, announcements = [] }) {
   return (
     <ViewerLayout>
       <div className="space-y-8">
@@ -139,26 +139,6 @@ export default function Dashboard({ stats, auth, announcements = [], recentActiv
           <AnnouncementsList announcements={announcements} />
         </div>
       </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="space-y-3">
-            {recentActivities.length > 0 ? (
-              recentActivities.map((activity) => (
-                <div key={activity.id} className="p-3 rounded-lg border border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-gray-900">{activity.title} ({activity.status})</p>
-                    <p className="text-xs text-gray-500">{new Date(activity.timestamp).toLocaleString()}</p>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">By {activity.actor}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500">No recent activity yet.</p>
-            )}
-          </div>
-        </div>
 
         {/* Information Box */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">

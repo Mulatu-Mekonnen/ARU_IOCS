@@ -6,7 +6,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const [demoBusy, setDemoBusy] = useState(false);
-  const [submitBusy, setSubmitBusy] = useState(false);
   const page = usePage();
   const pageErrors = page.props.errors || {};
 
@@ -22,10 +21,9 @@ export default function Login() {
     { role: 'Staff', email: 'staff@office.com', password: 'user123', color: 'from-green-500 to-teal-500' },
     { role: 'Viewer', email: 'namste@G', password: '1234', color: 'from-yellow-500 to-orange-500' },
   ];
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
   const handleDemoLogin = (demoEmail, demoPassword) => {
-    if (processing || demoBusy || submitBusy) return;
+    if (processing || demoBusy) return;
     // useForm's post() reads `data` from the last render; multiple setData + immediate post() can send empty fields.
     // Post an explicit payload so demo login always works on the first click.
     setData({ email: demoEmail, password: demoPassword, remember: true });
@@ -34,28 +32,16 @@ export default function Login() {
       email: demoEmail,
       password: demoPassword,
       remember: true,
-      _token: csrfToken,
     }, {
       preserveScroll: true,
       onFinish: () => setDemoBusy(false),
-      headers: csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {},
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (processing || demoBusy || submitBusy) return;
-    setSubmitBusy(true);
-    router.post('/login', {
-      email: data.email,
-      password: data.password,
-      remember: data.remember,
-      _token: csrfToken,
-    }, {
-      preserveScroll: true,
-      onFinish: () => setSubmitBusy(false),
-      headers: csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {},
-    });
+    if (processing || demoBusy) return;
+    post('/login');
   };
 
   const emailError = errors.email ?? pageErrors.email;
@@ -191,10 +177,10 @@ export default function Login() {
             {/* Submit button with modern colors */}
             <button
               type="submit"
-              disabled={processing || demoBusy || submitBusy}
+              disabled={processing || demoBusy}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg"
             >
-              {processing || demoBusy || submitBusy ? (
+              {processing || demoBusy ? (
                 <div className="flex items-center justify-center">
                   <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -232,7 +218,7 @@ export default function Login() {
                   <button
                     key={account.role}
                     onClick={() => handleDemoLogin(account.email, account.password)}
-                    disabled={processing || demoBusy || submitBusy}
+                    disabled={processing || demoBusy}
                     className={`p-3 bg-gradient-to-r ${account.color} text-white rounded-lg hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-xs font-medium`}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >

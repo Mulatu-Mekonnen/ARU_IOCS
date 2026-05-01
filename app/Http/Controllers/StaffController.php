@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Agenda;
 use App\Models\Office;
 use App\Models\Announcement;
+use App\Models\NotificationRead;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
@@ -29,6 +30,61 @@ class StaffController extends Controller
             'forwardedAgendas' => Agenda::where('created_by_id', $user->id)->where('status', 'FORWARDED')->count(),
         ];
 
+        // Agendas by status for agendas created by this user
+        $agendasByStatus = Agenda::selectRaw('status, COUNT(*) as count')
+            ->where('created_by_id', $user->id)
+            ->groupBy('status')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'status' => $item->status,
+                    'count' => $item->count,
+                    'label' => ucfirst(strtolower($item->status)),
+                ];
+            });
+
+        // Recent activity for this user
+        $recentActivities = collect();
+
+        // Recent agendas created by this user
+        $recentAgendas = Agenda::with(['createdBy', 'currentOffice'])
+            ->where('created_by_id', $user->id)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get()
+            ->map(function ($agenda) {
+                return [
+                    'id' => $agenda->id,
+                    'type' => 'agenda',
+                    'title' => 'Your Agenda: ' . $agenda->title,
+                    'description' => 'Status: ' . ucfirst(strtolower($agenda->status)),
+                    'timestamp' => $agenda->created_at,
+                    'icon' => 'Calendar',
+                ];
+            });
+
+        // Recent announcements
+        $recentAnnouncements = Announcement::with('author')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get()
+            ->map(function ($announcement) {
+                return [
+                    'id' => $announcement->id,
+                    'type' => 'announcement',
+                    'title' => 'New Announcement: ' . $announcement->title,
+                    'description' => 'Posted by ' . $announcement->author->name,
+                    'timestamp' => $announcement->created_at,
+                    'icon' => 'Megaphone',
+                ];
+            });
+
+        // Combine and sort by timestamp
+        $recentActivities = $recentAgendas->concat($recentAnnouncements)
+            ->sortByDesc('timestamp')
+            ->take(10)
+            ->values();
+
         $announcements = Announcement::with('author')
             ->orderByDesc('created_at')
             ->limit(10)
@@ -36,6 +92,8 @@ class StaffController extends Controller
 
         return Inertia::render('Dashboard/Staff/Dashboard', [
             'stats' => $stats,
+            'agendasByStatus' => $agendasByStatus,
+            'recentActivities' => $recentActivities,
             'announcements' => $announcements,
             'auth' => [
                 'user' => $request->user(),
@@ -140,42 +198,83 @@ class StaffController extends Controller
     {
         $user = $request->user();
 
-        // Create mock notifications
-        $notifications = [
-            [
-                'id' => '1',
-                'type' => 'new_communication',
-                'title' => 'New Communication Received',
-                'message' => 'A communication requires your review or action.',
-                'timestamp' => now()->subHours(2)->toIso8601String(),
-                'priority' => 'high',
-                'read' => false,
-                'actionUrl' => '/dashboard/staff/inbox',
-                'metadata' => ['comment' => null]
-            ],
-            [
-                'id' => '2',
-                'type' => 'approval_update',
-                'title' => 'Communication Status Updated',
-                'message' => 'Your communication has been approved and is ready for review.',
-                'timestamp' => now()->subHours(4)->toIso8601String(),
-                'priority' => 'medium',
-                'read' => false,
-                'actionUrl' => '/dashboard/staff/sent',
-                'metadata' => ['comment' => null]
-            ],
-            [
-                'id' => '3',
-                'type' => 'pending_reminder',
-                'title' => 'Pending Communications Reminder',
-                'message' => 'You have pending communications that need attention.',
-                'timestamp' => now()->subDays(1)->toIso8601String(),
-                'priority' => 'medium',
-                'read' => true,
-                'actionUrl' => '/dashboard/staff/agendas',
-                'metadata' => ['comment' => null]
-            ],
-        ];
+        // Fetch real agendas created by this user
+        $agendaNotifications = Agenda::where('created_by_id', $user->id)
+            ->with(['createdBy', 'currentOffice'])
+            ->latest('updated_at')
+            ->take(8)
+            ->get()
+            ->map(function ($agenda) {
+                $type = 'communication_created';
+                $title = 'Your Communication Submitted';
+                $priority = 'medium';
+
+                if ($agenda->status === 'APPROVED') {
+                    $type = 'communication_approved';
+                    $title = 'Your Communication Approved';
+                    $priority = 'high';
+                } elseif ($agenda->status === 'REJECTED') {
+                    $type = 'communication_rejected';
+                    $title = 'Your Communication Rejected';
+                    $priority = 'high';
+                } elseif ($agenda->status === 'FORWARDED') {
+                    $type = 'communication_forwarded';
+                    $title = 'Your Communication Forwarded';
+                    $priority = 'medium';
+                }
+
+                return [
+                    'id' => 'agenda-' . $agenda->id,
+                    'type' => $type,
+                    'title' => $title,
+                    'message' => sprintf(
+                        '%s - Status: %s',
+                        $agenda->title,
+                        $agenda->status
+                    ),
+                    'priority' => $priority,
+                    'timestamp' => optional($agenda->updated_at ?? $agenda->created_at)?->toIso8601String(),
+                    'read' => false,
+                    'actionUrl' => '/dashboard/staff/sent',
+                    'metadata' => null,
+                ];
+            });
+
+        // Fetch real announcements
+        $announcementNotifications = Announcement::with('author')
+            ->latest('created_at')
+            ->take(4)
+            ->get()
+            ->map(function ($announcement) {
+                return [
+                    'id' => 'announcement-' . $announcement->id,
+                    'type' => 'new_announcement',
+                    'title' => 'System Announcement Posted',
+                    'message' => sprintf(
+                        '%s%s',
+                        $announcement->title,
+                        $announcement->author?->name ? ' by ' . $announcement->author->name : ''
+                    ),
+                    'priority' => 'medium',
+                    'timestamp' => optional($announcement->created_at)?->toIso8601String(),
+                    'read' => false,
+                    'actionUrl' => '/dashboard/staff/notifications',
+                    'metadata' => null,
+                ];
+            });
+
+        $notifications = $agendaNotifications
+            ->concat($announcementNotifications)
+            ->sortByDesc('timestamp')
+            ->take(12)
+            ->values()
+            ->all();
+
+        $readIds = NotificationRead::where('user_id', $user->id)->pluck('notification_id')->all();
+        $notifications = collect($notifications)->map(function ($notification) use ($readIds) {
+            $notification['read'] = in_array($notification['id'], $readIds, true);
+            return $notification;
+        })->all();
 
         $stats = [
             'total' => count($notifications),

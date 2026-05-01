@@ -8,7 +8,8 @@ import {
   CheckCircle,
   XCircle,
   Forward,
-  Inbox
+  Inbox,
+  Megaphone
 } from "lucide-react";
 
 function StatCard({ title, value, icon: Icon, href, color }) {
@@ -48,7 +49,7 @@ function StatCard({ title, value, icon: Icon, href, color }) {
   );
 }
 
-export default function Dashboard({ stats, auth, announcements = [] }) {
+export default function Dashboard({ stats, auth, announcements = [], agendasByStatus, recentActivities }) {
   return (
     <ViewerLayout>
       <div className="space-y-8">
@@ -139,6 +140,87 @@ export default function Dashboard({ stats, auth, announcements = [] }) {
           <AnnouncementsList announcements={announcements} />
         </div>
       </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Approved Agendas by Status</h2>
+            <div className="space-y-4">
+              {agendasByStatus && agendasByStatus.length > 0 ? (
+                agendasByStatus.map((item, index) => {
+                  const statusColors = {
+                    APPROVED: 'bg-green-400',
+                  };
+                  return (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${statusColors[item.status] || 'bg-gray-400'}`}></div>
+                        <span className="font-medium text-gray-900">{item.label}</span>
+                      </div>
+                      <span className="text-lg font-semibold text-gray-700">{item.count}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No approved agendas</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">System Overview</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-4 h-4 text-gray-600" />
+                  <span className="font-medium text-gray-900">Total Agendas</span>
+                </div>
+                <span className="text-lg font-semibold text-gray-700">{stats.totalAgendas || 0}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="font-medium text-gray-900">Approved</span>
+                </div>
+                <span className="text-lg font-semibold text-gray-700">{stats.approvedAgendas || 0}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h2>
+          <div className="space-y-4">
+            {recentActivities && recentActivities.length > 0 ? (
+              recentActivities.map((activity, index) => {
+                const IconComponent = activity.icon === 'Calendar' ? Calendar : Megaphone;
+                return (
+                  <div key={index} className="flex items-start gap-4 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                      <IconComponent className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{activity.title}</h4>
+                      <p className="text-sm text-gray-600">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(activity.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No recent activities</p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Information Box */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">

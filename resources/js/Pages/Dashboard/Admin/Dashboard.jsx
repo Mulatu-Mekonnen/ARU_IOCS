@@ -14,7 +14,7 @@ import {
   Settings
 } from "lucide-react";
 
-export default function Dashboard({ stats }) {
+export default function Dashboard({ stats, agendasByStatus, agendasByOffice, recentActivities }) {
   return (
     <AdminLayout>
       <div className="space-y-8">
@@ -125,30 +125,58 @@ export default function Dashboard({ stats }) {
           </div>
         </div>
 
-        {/* Charts Section - Placeholder for now */}
+        {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Agendas by Status</h2>
             <div className="space-y-4">
-              {/* Placeholder data */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <span className="font-medium text-gray-900">Pending</span>
+              {agendasByStatus && agendasByStatus.length > 0 ? (
+                agendasByStatus.map((item, index) => {
+                  const statusColors = {
+                    PENDING: 'bg-yellow-400',
+                    APPROVED: 'bg-green-400',
+                    REJECTED: 'bg-red-400',
+                    FORWARDED: 'bg-blue-400',
+                    ARCHIVED: 'bg-gray-400',
+                  };
+                  return (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${statusColors[item.status] || 'bg-gray-400'}`}></div>
+                        <span className="font-medium text-gray-900">{item.label}</span>
+                      </div>
+                      <span className="text-lg font-semibold text-gray-700">{item.count}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No agenda data available</p>
                 </div>
-                <span className="text-lg font-semibold text-gray-700">{stats.pendingAgendas || 0}</span>
-              </div>
+              )}
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Agendas by Office</h2>
             <div className="space-y-4">
-              {/* Placeholder */}
-              <div className="text-center py-8 text-gray-500">
-                <Building className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Office statistics will be displayed here</p>
-              </div>
+              {agendasByOffice && agendasByOffice.length > 0 ? (
+                agendasByOffice.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Building className="w-4 h-4 text-gray-600" />
+                      <span className="font-medium text-gray-900">{item.office}</span>
+                    </div>
+                    <span className="text-lg font-semibold text-gray-700">{item.count}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Building className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No office data available</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -157,10 +185,30 @@ export default function Dashboard({ stats }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h2>
           <div className="space-y-4">
-            <div className="text-center py-8 text-gray-500">
-              <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Recent activities will be displayed here</p>
-            </div>
+            {recentActivities && recentActivities.length > 0 ? (
+              recentActivities.map((activity, index) => {
+                const IconComponent = activity.icon === 'Calendar' ? Calendar : Megaphone;
+                return (
+                  <div key={index} className="flex items-start gap-4 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                      <IconComponent className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{activity.title}</h4>
+                      <p className="text-sm text-gray-600">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(activity.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No recent activities</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -74,56 +74,57 @@ export default function StaffLayout({ children }) {
       {/* Main content */}
       <div className="flex-1 lg:ml-0">
         {/* Top bar */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="flex items-center justify-between h-16 px-4 lg:px-6">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 lg:hidden"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+        <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-3 md:px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden text-gray-500 hover:text-gray-700"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome{user?.name ? `, ${user.name}` : ""} 👋</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard/staff/notifications" className="relative text-gray-500 hover:text-gray-700">
+                <Bell className="w-6 h-6" />
+                {notificationStats.unread > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {notificationStats.unread > 99 ? '99+' : notificationStats.unread}
+                  </span>
+                )}
+              </Link>
 
-            <div className="flex items-center space-x-4 ml-auto">
-              {/* Notifications */}
-                     <Link
-                              href="/dashboard/staff/notifications"
-                              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 relative"
-                            >
-                              <Bell className="w-5 h-5" />
-                              {notificationStats.unread > 0 && (
-                                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
-                                  {notificationStats.unread}
-                                </span>
-                              )}
-                </Link>
-
-              {/* Profile dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                  className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
                 >
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-semibold">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : 'S'}
                   </div>
-                  <span className="hidden md:block text-sm font-medium">{user?.name || 'User'}</span>
                   <ChevronDown className="w-4 h-4" />
                 </button>
 
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="px-4 py-2 border-b border-gray-200">
+                      <div className="font-semibold">{user?.name || 'Staff User'}</div>
+                      <div className="text-sm text-gray-500">Staff</div>
+                    </div>
                     <Link
                       href="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center gap-2 w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100"
                       onClick={() => setProfileDropdownOpen(false)}
                     >
+                      <User className="w-4 h-4" />
                       Profile
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center gap-2 w-full px-4 py-2 text-left text-gray-700 hover:bg-red-50 hover:text-red-600"
                     >
-                      <LogOut className="w-4 h-4 inline mr-2" />
+                      <LogOut className="w-4 h-4" />
                       Logout
                     </button>
                   </div>

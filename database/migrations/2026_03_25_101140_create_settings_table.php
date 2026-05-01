@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('settings', function (Blueprint $table) {
-            $table->string('id', 25)->primary();
-            $table->string('key')->unique();
+            $table->string('key', 25)->primary();
             $table->text('value');
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
         });

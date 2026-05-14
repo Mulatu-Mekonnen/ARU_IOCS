@@ -15,6 +15,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ViewerController;
+use App\Http\Controllers\InternalMessageController;
 
 Route::get('/', [HomeController::class, 'index']);
 
@@ -54,26 +55,35 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/admin/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
     Route::post('/dashboard/admin/settings', [SettingsController::class, 'update'])->name('admin.settings.update');
     Route::get('/dashboard/head', [HeadController::class, 'dashboard']);
+    Route::get('/dashboard/head/staff', [HeadController::class, 'staff'])->name('head.staff.index');
     Route::get('/dashboard/head/agendas', [HeadController::class, 'agendas'])->name('head.agendas.index');
     Route::get('/dashboard/head/pending', [HeadController::class, 'pending'])->name('head.pending.index');
     Route::patch('/dashboard/head/pending/{agenda}', [HeadController::class, 'review'])->name('head.pending.review');
     Route::get('/dashboard/head/reports', [HeadController::class, 'reports'])->name('head.reports.index');
     Route::get('/dashboard/head/archive', [HeadController::class, 'archive'])->name('head.archive.index');
     Route::get('/dashboard/head/notifications', [HeadController::class, 'notifications'])->name('head.notifications.index');
-    Route::get('/dashboard/head/staff', [HeadController::class, 'staff'])->name('head.staff.index');
+    Route::get('/dashboard/head/messages', [InternalMessageController::class, 'headIndex'])->name('head.messages.index');
+    Route::post('/dashboard/head/messages', [InternalMessageController::class, 'headStore'])->name('head.messages.store');
+    Route::get('/dashboard/admin/messages', [InternalMessageController::class, 'adminIndex'])->name('admin.messages.index');
+    Route::post('/dashboard/admin/messages', [InternalMessageController::class, 'adminStore'])->name('admin.messages.store');
+    Route::post('/dashboard/messages/{internalMessage}/reply', [InternalMessageController::class, 'reply'])->name('messages.reply');
     Route::get('/dashboard/staff', [StaffController::class, 'dashboard']);
     Route::get('/dashboard/staff/agendas', [StaffController::class, 'agendas'])->name('staff.agendas.index');
     Route::get('/dashboard/staff/agendas/create', [AgendaController::class, 'create'])->name('staff.agendas.create');
     Route::post('/dashboard/staff/agendas', [AgendaController::class, 'store'])->name('staff.agendas.store');
     Route::get('/dashboard/staff/inbox', [StaffController::class, 'inbox'])->name('staff.inbox.index');
+    Route::patch('/dashboard/staff/inbox/{agenda}', [StaffController::class, 'respondToInboxAgenda'])->name('staff.inbox.respond');
     Route::get('/dashboard/staff/sent', [StaffController::class, 'sent'])->name('staff.sent.index');
     Route::get('/dashboard/staff/archive', [StaffController::class, 'archive'])->name('staff.archive.index');
-    Route::get('/dashboard/staff/notifications', [StaffController::class, 'notifications'])->name('staff.notifications.index');
+    Route::get('/dashboard/staff/messages', [InternalMessageController::class, 'staffIndex'])->name('staff.messages.index');
+    Route::post('/dashboard/staff/messages', [InternalMessageController::class, 'staffStore'])->name('staff.messages.store');
     Route::get('/dashboard/viewer', [ViewerController::class, 'dashboard']);
     Route::get('/dashboard/viewer/inbox', [ViewerController::class, 'inbox'])->name('viewer.inbox.index');
     Route::get('/dashboard/viewer/archive', [ViewerController::class, 'archive'])->name('viewer.archive.index');
     Route::get('/dashboard/viewer/announcements', [ViewerController::class, 'announcements'])->name('viewer.announcements.index');
     Route::get('/dashboard/viewer/notifications', [ViewerController::class, 'notifications'])->name('viewer.notifications.index');
+    Route::get('/dashboard/viewer/messages', [InternalMessageController::class, 'viewerIndex'])->name('viewer.messages.index');
+    Route::post('/dashboard/viewer/messages', [InternalMessageController::class, 'viewerStore'])->name('viewer.messages.store');
     Route::get('/profile', [UserController::class, 'profile'])->name('profile.index');
     Route::put('/profile', [UserController::class, 'updateProfile'])->name('profile.update');
     // Shared notification routes for all authenticated users

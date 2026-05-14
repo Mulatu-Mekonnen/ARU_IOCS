@@ -59,6 +59,8 @@ class AgendaController extends Controller
 
     public function create(Request $request)
     {
+        abort_if($request->user()->role === 'VIEWER', 403);
+
         $offices = Office::all();
 
         return Inertia::render('Dashboard/Staff/Agendas/Create', [
@@ -68,20 +70,31 @@ class AgendaController extends Controller
 
     public function store(Request $request)
     {
+        abort_if($request->user()->role === 'VIEWER', 403);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'receiver_office_id' => 'required|exists:offices,id',
+            'receiver_office_id' => [
+                'required',
+                'exists:offices,id',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    if ((string) $value === (string) $request->user()->office_id) {
+                        $fail('Select another office. You cannot send a communication to your own office here.');
+                    }
+                },
+            ],
         ]);
 
         $validated['created_by_id'] = $request->user()->id;
         $validated['sender_office_id'] = $request->user()->office_id;
-        $validated['current_office_id'] = $request->user()->office_id;
+        // Queue at the receiving office so they can accept/reject without admin involvement.
+        $validated['current_office_id'] = $validated['receiver_office_id'];
         $validated['status'] = 'PENDING';
 
         Agenda::create($validated);
 
-        return redirect()->route('staff.agendas.create')->with('success', 'Agenda created successfully');
+        return redirect()->route('staff.agendas.create')->with('success', 'Communication sent to the selected office.');
     }
 
     public function update(Request $request, Agenda $agenda)
@@ -113,7 +126,7 @@ class AgendaController extends Controller
 
         if ($action === 'forward') {
             $agenda->update([
-                'status' => 'FORWARDED',
+                'status' => 'PENDING',
                 'receiver_office_id' => $validated['receiver_office_id'],
                 'current_office_id' => $validated['receiver_office_id'],
                 'approved_by_id' => $request->user()->id,

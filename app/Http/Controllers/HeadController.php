@@ -188,7 +188,7 @@ class HeadController extends Controller
 
         if ($action === 'forward') {
             $agenda->update([
-                'status' => 'FORWARDED',
+                'status' => 'PENDING',
                 'receiver_office_id' => $receiverOfficeId,
                 'current_office_id' => $receiverOfficeId,
                 'approved_by_id' => $user->id,
@@ -275,7 +275,9 @@ class HeadController extends Controller
     public function staff(Request $request)
     {
         $user = $request->user();
+        abort_unless($user->role === 'HEAD', 403);
         $office = $user->office;
+        abort_unless($office, 403);
 
         $query = User::where('office_id', $office->id)->with('office');
 

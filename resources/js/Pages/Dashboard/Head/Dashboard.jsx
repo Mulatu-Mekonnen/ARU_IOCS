@@ -68,7 +68,7 @@ export default function Dashboard({ stats, auth, announcements = [], agendasBySt
     <HeadLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Office Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Head Dashboard</h1>
           <p className="text-gray-600">Manage your office agendas and team</p>
         </div>
 
@@ -190,13 +190,16 @@ export default function Dashboard({ stats, auth, announcements = [], agendasBySt
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Office Overview</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+              <Link
+                href="/dashboard/head/staff"
+                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
                 <div className="flex items-center gap-3">
                   <Users className="w-4 h-4 text-gray-600" />
-                  <span className="font-medium text-gray-900">Staff Members</span>
+                  <span className="font-medium text-gray-900">Office users</span>
                 </div>
                 <span className="text-lg font-semibold text-gray-700">{stats.totalUsers || 0}</span>
-              </div>
+              </Link>
               <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
                 <div className="flex items-center gap-3">
                   <Calendar className="w-4 h-4 text-gray-600" />

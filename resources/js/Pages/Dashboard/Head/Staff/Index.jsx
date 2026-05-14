@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import HeadLayout from '../HeadLayout';

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import DashboardWelcomeHeader, { dashboardRoleLabel, dashboardOfficeLabel } from '../DashboardWelcomeHeader';
 import {
   LayoutDashboard,
   Users,
@@ -15,14 +16,15 @@ import {
   Bell,
   User,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Mail,
 } from "lucide-react";
 
 export default function AdminLayout({ children }) {
   const { url, props } = usePage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [user, setUser] = useState(props.auth?.user || null);
+  const user = props.auth?.user ?? null;
   const [notificationStats, setNotificationStats] = useState({ unread: 0 });
 
   useEffect(() => {
@@ -34,6 +36,7 @@ export default function AdminLayout({ children }) {
     { name: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
     { name: "Users", href: "/dashboard/admin/users", icon: Users },
     { name: "Agendas", href: "/dashboard/admin/agendas", icon: Calendar },
+    { name: "Communications", href: "/dashboard/admin/messages", icon: Mail },
     { name: "Offices", href: "/dashboard/admin/offices", icon: Building },
     { name: "Announcements", href: "/dashboard/admin/announcements", icon: Megaphone },
     { name: "Reports", href: "/dashboard/admin/reports", icon: FileText },
@@ -70,7 +73,9 @@ export default function AdminLayout({ children }) {
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                  url === item.href
+                  (item.href === "/dashboard/admin"
+                    ? url === "/dashboard/admin"
+                    : url === item.href || url.startsWith(item.href + "/"))
                     ? "bg-blue-600 text-white shadow-md"
                     : "text-gray-700 hover:bg-gray-100 hover:shadow-sm"
                 }`}
@@ -108,7 +113,7 @@ export default function AdminLayout({ children }) {
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome{user?.name ? `, ${user.name}` : ""} 👋</h1>
+              <DashboardWelcomeHeader />
             </div>
             <div className="flex items-center gap-4">
               <Link href="/dashboard/admin/notifications" className="relative text-gray-500 hover:text-gray-700">
@@ -135,7 +140,8 @@ export default function AdminLayout({ children }) {
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     <div className="px-4 py-2 border-b border-gray-200">
                       <div className="font-semibold">{user?.name || 'Admin User'}</div>
-                      <div className="text-sm text-gray-500">Administrator</div>
+                      <div className="text-sm text-gray-600">{dashboardRoleLabel(user?.role)}</div>
+                      <div className="text-xs text-gray-500 truncate max-w-[14rem]">{dashboardOfficeLabel(user)}</div>
                     </div>
                     <button className="flex items-center gap-2 w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100">
                       <User className="w-4 h-4" />

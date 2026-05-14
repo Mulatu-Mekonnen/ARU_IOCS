@@ -7,8 +7,11 @@ use App\Models\Agenda;
 use App\Models\Office;
 use App\Models\Announcement;
 use App\Models\NotificationRead;
+use App\Models\ApprovalHistory;
+use App\Support\AuditLogger;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class StaffController extends Controller
 {
@@ -126,15 +129,86 @@ class StaffController extends Controller
         $user = $request->user();
         $office = $user->office;
 
-        // Agendas sent to this office (inbox)
-        $agendas = Agenda::where('receiver_office_id', $office->id)
-            ->orWhere('current_office_id', $office->id)
+        // Communications where this office is the intended receiver or currently holds the item (e.g. after forward).
+        $agendas = Agenda::where(function ($q) use ($office) {
+            $q->where('receiver_office_id', $office->id)
+                ->orWhere('current_office_id', $office->id);
+        })
             ->with(['createdBy', 'senderOffice', 'receiverOffice', 'currentOffice', 'approvalHistories'])
+            ->orderByDesc('created_at')
             ->paginate(20);
 
         return Inertia::render('Dashboard/Staff/Inbox/Index', [
             'agendas' => $agendas,
+            'myOfficeId' => $office->id,
         ]);
+    }
+
+    /**
+     * Receiving office accepts or rejects a pending communication (no admin required).
+     */
+    public function respondToInboxAgenda(Request $request, Agenda $agenda)
+    {
+        $user = $request->user();
+        $officeId = $user->office_id;
+
+        if ($user->role === 'ADMIN') {
+            return redirect()->back()->with('error', 'Admins do not process office communications here.');
+        }
+
+        if (! in_array($user->role, ['STAFF', 'HEAD'], true)) {
+            return redirect()->back()->with('error', 'Your role cannot accept or reject communications here.');
+        }
+
+        if (! $officeId || (string) $agenda->current_office_id !== (string) $officeId) {
+            return redirect()->back()->with('error', 'You cannot respond to this communication from your office.');
+        }
+
+        if ($agenda->status !== 'PENDING') {
+            return redirect()->back()->with('error', 'This communication is no longer pending.');
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|in:approve,reject',
+            'comment' => 'nullable|string|max:1000|required_if:action,reject',
+        ]);
+
+        if ($validated['action'] === 'approve') {
+            $agenda->update([
+                'status' => 'APPROVED',
+                'approved_by_id' => $user->id,
+            ]);
+            ApprovalHistory::create([
+                'id' => Str::random(25),
+                'agenda_id' => $agenda->id,
+                'action' => 'APPROVED',
+                'comment' => $validated['comment'] ?? null,
+                'action_by_id' => $user->id,
+            ]);
+            AuditLogger::log($user, 'Approved Communication (Office)', 'Communications', 'Office approved "' . $agenda->title . '"', [
+                'agenda_id' => $agenda->id,
+            ]);
+        }
+
+        if ($validated['action'] === 'reject') {
+            $agenda->update([
+                'status' => 'REJECTED',
+                'approved_by_id' => $user->id,
+            ]);
+            ApprovalHistory::create([
+                'id' => Str::random(25),
+                'agenda_id' => $agenda->id,
+                'action' => 'REJECTED',
+                'comment' => $validated['comment'],
+                'action_by_id' => $user->id,
+            ]);
+            AuditLogger::log($user, 'Rejected Communication (Office)', 'Communications', 'Office rejected "' . $agenda->title . '"', [
+                'agenda_id' => $agenda->id,
+                'reason' => $validated['comment'],
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Communication updated.');
     }
 
     public function sent(Request $request)

@@ -1,8 +1,12 @@
 import React from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import StaffLayout from '../StaffLayout';
 
 export default function Create({ offices }) {
+  const page = usePage();
+  const myOfficeId = page.props.auth?.user?.office_id;
+  const officeOptions = (offices || []).filter((o) => String(o.id) !== String(myOfficeId));
+
   const { data, setData, post, processing, errors } = useForm({
     title: "",
     description: "",
@@ -19,7 +23,9 @@ export default function Create({ offices }) {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Create New Communication</h1>
-          <p className="text-gray-600 mt-1">Send a new agenda to another office</p>
+          <p className="text-gray-600 mt-1">
+            Send directly to another office. They will see it in Inbox and can accept or reject — no admin step.
+          </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-6">
@@ -57,7 +63,7 @@ export default function Create({ offices }) {
                 required
               >
                 <option value="">Choose office</option>
-                {offices.map((o) => (
+                {officeOptions.map((o) => (
                   <option key={o.id} value={o.id}>{o.name}</option>
                 ))}
               </select>

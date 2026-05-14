@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import DashboardWelcomeHeader, { dashboardRoleLabel, dashboardOfficeLabel } from '../DashboardWelcomeHeader';
 import {
   LayoutDashboard,
   Calendar,
@@ -9,14 +10,14 @@ import {
   LogOut,
   ChevronDown,
   Menu,
-  X
+  MessageSquare,
 } from "lucide-react";
 
 export default function ViewerLayout({ children }) {
   const { url, props } = usePage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [user, setUser] = useState(props.auth?.user || null);
+  const user = props.auth?.user ?? null;
   const [notificationStats, setNotificationStats] = useState({ unread: 0 });
 
   useEffect(() => {
@@ -24,8 +25,9 @@ export default function ViewerLayout({ children }) {
   }, []);
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard/viewer", icon: LayoutDashboard },
+    { name: "Dashboard", href: "/dashboard/viewer", icon: LayoutDashboard, exact: true },
     { name: "Inbox", href: "/dashboard/viewer/inbox", icon: Calendar },
+    { name: "My communications", href: "/dashboard/viewer/messages", icon: MessageSquare },
     { name: "Announcements", href: "/dashboard/viewer/announcements", icon: Calendar },
     { name: "Archive", href: "/dashboard/viewer/archive", icon: Calendar },
     { name: "Notifications", href: "/dashboard/viewer/notifications", icon: Bell }, 
@@ -40,13 +42,15 @@ export default function ViewerLayout({ children }) {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
         <div className="flex items-center justify-center h-16 px-4 bg-orange-600">
-          <h1 className="text-xl font-bold text-white">ARU IOCS</h1>
+          <h1 className="text-xl font-bold text-white">Viewer Panel</h1>
         </div>
         <nav className="mt-8">
           <div className="px-4 space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = url === item.href;
+              const isActive = item.exact
+                ? url === item.href || url === `${item.href}/`
+                : url === item.href || url.startsWith(`${item.href}/`);
               return (
                 <Link
                   key={item.name}
@@ -79,7 +83,7 @@ export default function ViewerLayout({ children }) {
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome{user?.name ? `, ${user.name}` : ""} 👋</h1>
+              <DashboardWelcomeHeader />
             </div>
             <div className="flex items-center gap-4">
               <Link href="/dashboard/viewer/notifications" className="relative text-gray-500 hover:text-gray-700">
@@ -106,7 +110,8 @@ export default function ViewerLayout({ children }) {
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     <div className="px-4 py-2 border-b border-gray-200">
                       <div className="font-semibold">{user?.name || 'Viewer User'}</div>
-                      <div className="text-sm text-gray-500">Viewer</div>
+                      <div className="text-sm text-gray-600">{dashboardRoleLabel(user?.role)}</div>
+                      <div className="text-xs text-gray-500 truncate max-w-[14rem]">{dashboardOfficeLabel(user)}</div>
                     </div>
                     <Link
                       href="/profile"

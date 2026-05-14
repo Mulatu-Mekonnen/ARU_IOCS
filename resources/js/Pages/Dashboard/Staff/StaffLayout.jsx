@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import DashboardWelcomeHeader, { dashboardRoleLabel, dashboardOfficeLabel } from '../DashboardWelcomeHeader';
 import {
   LayoutDashboard,
   Calendar,
@@ -12,14 +13,14 @@ import {
   LogOut,
   ChevronDown,
   Menu,
-  X
+  MessageSquare,
 } from "lucide-react";
 
 export default function StaffLayout({ children }) {
   const { url, props } = usePage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [user, setUser] = useState(props.auth?.user || null);
+  const user = props.auth?.user ?? null;
   const [notificationStats, setNotificationStats] = useState({ unread: 0 });
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function StaffLayout({ children }) {
   const navItems = [
     { name: "Dashboard", href: "/dashboard/staff", icon: LayoutDashboard },
     { name: "Inbox", href: "/dashboard/staff/inbox", icon: Inbox },
+    { name: "Office messages", href: "/dashboard/staff/messages", icon: MessageSquare },
     { name: "My Communications", href: "/dashboard/staff/agendas", icon: Calendar },
     { name: "Sent", href: "/dashboard/staff/sent", icon: Send },
     { name: "Archive", href: "/dashboard/staff/archive", icon: Archive },
@@ -44,7 +46,7 @@ export default function StaffLayout({ children }) {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
         <div className="flex items-center justify-center h-16 px-4 bg-green-600">
-          <h1 className="text-xl font-bold text-white">ARU IOCS</h1>
+          <h1 className="text-xl font-bold text-white">Staff Panel</h1>
         </div>
         <nav className="mt-8">
           <div className="px-4 space-y-2">
@@ -83,7 +85,7 @@ export default function StaffLayout({ children }) {
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Welcome{user?.name ? `, ${user.name}` : ""} 👋</h1>
+              <DashboardWelcomeHeader />
             </div>
             <div className="flex items-center gap-4">
               <Link href="/dashboard/staff/notifications" className="relative text-gray-500 hover:text-gray-700">
@@ -110,7 +112,8 @@ export default function StaffLayout({ children }) {
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     <div className="px-4 py-2 border-b border-gray-200">
                       <div className="font-semibold">{user?.name || 'Staff User'}</div>
-                      <div className="text-sm text-gray-500">Staff</div>
+                      <div className="text-sm text-gray-600">{dashboardRoleLabel(user?.role)}</div>
+                      <div className="text-xs text-gray-500 truncate max-w-[14rem]">{dashboardOfficeLabel(user)}</div>
                     </div>
                     <Link
                       href="/profile"

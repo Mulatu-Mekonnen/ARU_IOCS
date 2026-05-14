@@ -30,7 +30,7 @@ export default function StaffLayout({ children }) {
   const navItems = [
     { name: "Dashboard", href: "/dashboard/staff", icon: LayoutDashboard },
     { name: "Inbox", href: "/dashboard/staff/inbox", icon: Inbox },
-    { name: "Office messages", href: "/dashboard/staff/messages", icon: MessageSquare },
+    { name: "My Office messages", href: "/dashboard/staff/messages", icon: MessageSquare },
     { name: "My Communications", href: "/dashboard/staff/agendas", icon: Calendar },
     { name: "Sent", href: "/dashboard/staff/sent", icon: Send },
     { name: "Archive", href: "/dashboard/staff/archive", icon: Archive },
